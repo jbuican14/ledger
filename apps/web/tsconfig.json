@@ -1,0 +1,15 @@
+{
+  "extends": "@ledger/config/typescript/next.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@ledger/ui": ["../../packages/ui/src"],
+      "@ledger/ui/*": ["../../packages/ui/src/*"],
+      "@ledger/database": ["../../packages/database/src"],
+      "@ledger/database/*": ["../../packages/database/src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
