@@ -3,13 +3,31 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@ledger/ui": ["../../packages/ui/src"],
-      "@ledger/ui/*": ["../../packages/ui/src/*"],
-      "@ledger/database": ["../../packages/database/src"],
-      "@ledger/database/*": ["../../packages/database/src/*"]
-    }
+      "@/*": [
+        "./src/*"
+      ],
+      "@ledger/ui": [
+        "../../packages/ui/src"
+      ],
+      "@ledger/ui/*": [
+        "../../packages/ui/src/*"
+      ],
+      "@ledger/database": [
+        "../../packages/database/src"
+      ],
+      "@ledger/database/*": [
+        "../../packages/database/src/*"
+      ]
+    },
+    "allowJs": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
