@@ -38,7 +38,6 @@ export function LoginForm() {
         setError(error.message);
         return;
       }
-      console.log("Login successful, redirecting...");
       // Redirect to home - middleware will handle routing based on onboarding status
       router.push("/");
       router.refresh();
