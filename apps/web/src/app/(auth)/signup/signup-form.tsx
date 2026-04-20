@@ -72,19 +72,38 @@ export function SignupForm() {
 
   if (success) {
     return (
-      <div className="text-center space-y-4 p-6 bg-primary/5 rounded-lg">
-        <h3 className="font-semibold text-lg">Check your email</h3>
-        <p className="text-muted-foreground text-sm">
-          We&apos;ve sent a verification link to <strong>{email}</strong>.
-          <br />
-          Click the link to activate your account.
+      <div className="space-y-6">
+        <div className="text-center space-y-4 p-6 bg-primary/5 rounded-lg">
+          <h3 className="font-semibold text-lg">Check your email</h3>
+          <p className="text-muted-foreground text-sm">
+            We&apos;ve sent a verification link to <strong>{email}</strong>.
+            <br />
+            Click the link to activate your account.
+          </p>
+        </div>
+        <p className="text-center text-sm text-muted-foreground">
+          <Link
+            href="/login"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Back to sign in
+          </Link>
         </p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold tracking-tight">
+          Create an account
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Enter your email below to create your account
+        </p>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input
@@ -213,6 +232,17 @@ export function SignupForm() {
           Privacy Policy
         </Link>
       </p>
-    </form>
+      </form>
+
+      <p className="text-center text-sm text-muted-foreground">
+        Already have an account?{" "}
+        <Link
+          href="/login"
+          className="font-medium text-primary underline-offset-4 hover:underline"
+        >
+          Sign in
+        </Link>
+      </p>
+    </div>
   );
 }

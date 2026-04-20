@@ -16,7 +16,9 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(
-    searchParams.get("error") ? "Authentication failed. Please try again." : null
+    searchParams.get("error")
+      ? "Authentication failed. Please try again."
+      : null,
   );
   const [loading, setLoading] = useState(false);
 
@@ -36,23 +38,10 @@ export function LoginForm() {
         setError(error.message);
         return;
       }
-
-      // Check onboarding status
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("onboarding_completed, household_id")
-          .eq("id", user.id)
-          .single();
-
-        if (profile?.onboarding_completed && profile?.household_id) {
-          router.push("/dashboard");
-        } else {
-          router.push("/onboarding");
-        }
-        router.refresh();
-      }
+      console.log("Login successful, redirecting...");
+      // Redirect to home - middleware will handle routing based on onboarding status
+      router.push("/");
+      router.refresh();
     } catch (err) {
       setError("An unexpected error occurred");
     } finally {

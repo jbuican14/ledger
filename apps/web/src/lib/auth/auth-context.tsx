@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useMemo } from "react";
-import { User } from "@supabase/supabase-js";
-import { createBrowserClient } from "@ledger/database";
+import { createContext, useContext, useEffect, useState, useRef } from "react";
+import type { User } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client"; // ✅ use YOUR SSR client
 
 interface Profile {
   id: string;
@@ -29,52 +29,50 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// ✅ Create ONE shared instance (correct)
+const supabase = createClient();
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [household, setHousehold] = useState<Household | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const supabase = useMemo(() => {
-    return createBrowserClient();
-  }, []);
+  const isFetching = useRef(false);
+  const mounted = useRef(true);
 
   const fetchProfile = async (userId: string) => {
+    if (isFetching.current) return;
+    isFetching.current = true;
+
     try {
-      const { data: profileData, error: profileError } = await supabase
+      const { data: profileData, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
         .single();
 
-      if (profileError) {
-        console.error("Error fetching profile:", profileError);
-        return;
+      if (!mounted.current) return;
+      if (error) throw error;
+
+      setProfile(profileData);
+
+      if (profileData?.household_id) {
+        const { data: householdData, error: householdError } = await supabase
+          .from("households")
+          .select("*")
+          .eq("id", profileData.household_id)
+          .single();
+
+        if (!mounted.current) return;
+        if (householdError) throw householdError;
+
+        setHousehold(householdData);
       }
-
-      if (profileData) {
-        setProfile(profileData);
-
-        // Fetch household if user has one
-        if (profileData.household_id) {
-          const { data: householdData, error: householdError } = await supabase
-            .from("households")
-            .select("*")
-            .eq("id", profileData.household_id)
-            .single();
-
-          if (householdError) {
-            console.error("Error fetching household:", householdError);
-            return;
-          }
-
-          if (householdData) {
-            setHousehold(householdData);
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error in fetchProfile:", error);
+    } catch (err) {
+      console.error("Profile fetch error:", err);
+    } finally {
+      isFetching.current = false;
     }
   };
 
@@ -85,35 +83,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Listen for auth changes - this fires immediately with current session
+    mounted.current = true;
+
+    const init = async () => {
+      try {
+        // 🔥 IMPORTANT: use getUser(), NOT getSession()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!mounted.current) return;
+
+        if (user) {
+          setUser(user);
+          await fetchProfile(user.id);
+        }
+      } catch (err) {
+        console.error("Init auth error:", err);
+      } finally {
+        if (mounted.current) setIsLoading(false);
+      }
+    };
+
+    init();
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      try {
-        if (session?.user) {
-          setUser(session.user);
-          await fetchProfile(session.user.id);
-        } else {
-          setUser(null);
-          setProfile(null);
-          setHousehold(null);
-        }
-      } catch (error) {
-        console.error("Auth state change error:", error);
-      } finally {
-        setIsLoading(false);
+      if (!mounted.current) return;
+
+      if (event === "SIGNED_IN" && session?.user) {
+        setUser(session.user);
+        await fetchProfile(session.user.id);
+      }
+
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        setProfile(null);
+        setHousehold(null);
       }
     });
 
     return () => {
+      mounted.current = false;
+      subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, []);
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setUser(null);
-    setProfile(null);
-    setHousehold(null);
+
+    // 🔥 ensure middleware sees it immediately
+    window.location.href = "/login";
   };
 
   return (
@@ -134,8 +155,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+  if (!context) {
+    throw new Error("useAuth must be used within AuthProvider");
   }
   return context;
 }

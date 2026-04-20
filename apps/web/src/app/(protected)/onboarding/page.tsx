@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth/auth-context";
 import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/components/ui/toast";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const { user, refreshProfile } = useAuth();
+  const { showToast } = useToast();
   const [householdName, setHouseholdName] = useState("My Finances");
   const [currency, setCurrency] = useState("GBP");
   const [loading, setLoading] = useState(false);
@@ -66,6 +68,7 @@ export default function OnboardingPage() {
 
       // Refresh profile and redirect
       await refreshProfile();
+      showToast("Welcome to Ledger!", "success");
       router.push("/dashboard");
     } catch (err) {
       setError("An unexpected error occurred");
@@ -106,7 +109,7 @@ export default function OnboardingPage() {
               id="currency"
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <option value="GBP">£ GBP - British Pound</option>
               <option value="EUR">€ EUR - Euro</option>
