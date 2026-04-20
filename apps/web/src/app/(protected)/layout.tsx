@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth/auth-context";
+import { AppShell } from "@/components/layout";
 
 export default function ProtectedLayout({
   children,
@@ -17,5 +18,5 @@ export default function ProtectedLayout({
     );
   }
 
-  return <>{children}</>;
+  return <AppShell>{children}</AppShell>;
 }

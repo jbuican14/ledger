@@ -66,6 +66,32 @@ pnpm typecheck    # Type-check all apps
 pnpm clean        # Clean all build artifacts
 ```
 
+## Troubleshooting
+
+### Next.js cache issues
+
+If you encounter webpack errors or stale builds after switching branches or making significant changes, clear the Next.js cache:
+
+```bash
+cd apps/web
+rm -rf .next
+pnpm dev
+```
+
+### Common issues
+
+- **"**webpack_modules**[moduleId] is not a function"** - Clear `.next` cache (see above)
+- **"Loading..." stuck forever** - Check browser console for RLS/Supabase errors
+- **Auth errors after schema changes** - Run `supabase db reset` to apply migrations
+
+### when update new node do
+
+```bash
+rm -rf node_modules
+pnpm install
+pnpm store prune  # Optional: clean pnpm cache
+```
+
 ## Documentation
 
 - [Product Specification](./PRODUCT_SPEC.md) - Full product requirements and epic breakdown

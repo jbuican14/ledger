@@ -1,68 +1,79 @@
 "use client";
 
 import { useAuth } from "@/lib/auth/auth-context";
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
-  const { user, profile, household, signOut } = useAuth();
-  const router = useRouter();
-
-  const handleSignOut = async () => {
-    await signOut();
-    router.push("/login");
-  };
+  const { user, profile, household } = useAuth();
 
   return (
-    <div className="min-h-screen p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <Button variant="outline" onClick={handleSignOut}>
-            Sign out
-          </Button>
+    <div className="p-4 lg:p-6">
+      <div className="max-w-4xl">
+        <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {/* Quick Stats */}
+          <div className="bg-card border rounded-lg p-4">
+            <p className="text-sm text-muted-foreground">This Month</p>
+            <p className="text-2xl font-bold">£0.00</p>
+            <p className="text-xs text-muted-foreground mt-1">Total spent</p>
+          </div>
+
+          <div className="bg-card border rounded-lg p-4">
+            <p className="text-sm text-muted-foreground">Budget Remaining</p>
+            <p className="text-2xl font-bold text-green-600">£0.00</p>
+            <p className="text-xs text-muted-foreground mt-1">of £0.00 budget</p>
+          </div>
+
+          <div className="bg-card border rounded-lg p-4">
+            <p className="text-sm text-muted-foreground">Goals Progress</p>
+            <p className="text-2xl font-bold">0%</p>
+            <p className="text-xs text-muted-foreground mt-1">0 active goals</p>
+          </div>
         </div>
 
-        <div className="grid gap-6">
-          <div className="bg-card border rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">User Info</h2>
+        {/* User & Household Info */}
+        <div className="grid gap-4 md:grid-cols-2 mt-6">
+          <div className="bg-card border rounded-lg p-4">
+            <h2 className="text-sm font-semibold mb-3">Your Profile</h2>
             <dl className="space-y-2 text-sm">
-              <div>
+              <div className="flex justify-between">
                 <dt className="text-muted-foreground">Email</dt>
-                <dd>{user?.email}</dd>
+                <dd className="font-medium">{user?.email}</dd>
               </div>
-              <div>
+              <div className="flex justify-between">
                 <dt className="text-muted-foreground">Display Name</dt>
-                <dd>{profile?.display_name || "Not set"}</dd>
+                <dd className="font-medium">{profile?.display_name || "Not set"}</dd>
               </div>
             </dl>
           </div>
 
-          <div className="bg-card border rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Household</h2>
+          <div className="bg-card border rounded-lg p-4">
+            <h2 className="text-sm font-semibold mb-3">Household</h2>
             {household ? (
               <dl className="space-y-2 text-sm">
-                <div>
+                <div className="flex justify-between">
                   <dt className="text-muted-foreground">Name</dt>
-                  <dd>{household.name}</dd>
+                  <dd className="font-medium">{household.name}</dd>
                 </div>
-                <div>
+                <div className="flex justify-between">
                   <dt className="text-muted-foreground">Currency</dt>
-                  <dd>{household.currency}</dd>
+                  <dd className="font-medium">{household.currency}</dd>
                 </div>
               </dl>
             ) : (
-              <p className="text-muted-foreground">No household set up yet</p>
+              <p className="text-muted-foreground text-sm">No household set up yet</p>
             )}
           </div>
+        </div>
 
-          <div className="bg-primary/5 border border-primary/20 rounded-lg p-6">
-            <p className="text-sm text-muted-foreground">
-              🎉 Authentication is working! This is a placeholder dashboard.
-              <br />
-              Next steps: Build the full dashboard with transactions and goals.
-            </p>
-          </div>
+        {/* Getting Started */}
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mt-6">
+          <h3 className="font-semibold mb-2">Getting Started</h3>
+          <ul className="text-sm text-muted-foreground space-y-1">
+            <li>1. Add your first transaction using the + button</li>
+            <li>2. Set up your monthly budget in Settings</li>
+            <li>3. Create savings goals to track your progress</li>
+          </ul>
         </div>
       </div>
     </div>
