@@ -73,12 +73,14 @@ export async function middleware(request: NextRequest) {
   // Redirect to dashboard if accessing auth pages while logged in
   if (isPublicRoute && user && pathname !== "/auth/callback") {
     // Check onboarding status
+    console.log("Checking onboarding status for user:", user.id);
     const { data: profile } = await supabase
       .from("profiles")
       .select("onboarding_completed, household_id")
       .eq("id", user.id)
       .single();
 
+      console.log("Profile data:", profile);
     if (profile?.onboarding_completed && profile?.household_id) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     } else if (pathname !== "/onboarding") {

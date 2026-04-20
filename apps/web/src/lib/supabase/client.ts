@@ -1,11 +1,6 @@
 "use client";
 
-import { createBrowserClient } from "@supabase/ssr";
-import { env } from "@/env";
+// This file is kept for backwards compatibility but is deprecated.
+// Use `createBrowserClient` from "@ledger/database" instead.
 
-export function createClient() {
-  return createBrowserClient(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
-}
+export { createBrowserClient } from "@ledger/database";

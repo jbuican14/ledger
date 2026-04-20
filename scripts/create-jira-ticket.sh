@@ -25,40 +25,42 @@ case "$ISSUE_TYPE" in
     *) TYPE_ID="10001" ;;
 esac
 
-# Build JSON payload
+# Build JSON payload using Python for proper escaping
 if [ "$ISSUE_TYPE" = "Subtask" ] && [ -n "$PARENT_KEY" ]; then
-    PAYLOAD=$(cat <<EOF
-{
-    "fields": {
-        "project": {"key": "${JIRA_PROJECT_KEY}"},
-        "summary": "${TITLE}",
-        "description": {
-            "type": "doc",
-            "version": 1,
-            "content": [{"type": "paragraph", "content": [{"type": "text", "text": "${DESCRIPTION}"}]}]
+    PAYLOAD=$(python3 -c "
+import json
+payload = {
+    'fields': {
+        'project': {'key': '$JIRA_PROJECT_KEY'},
+        'summary': '''$TITLE''',
+        'description': {
+            'type': 'doc',
+            'version': 1,
+            'content': [{'type': 'paragraph', 'content': [{'type': 'text', 'text': '''$DESCRIPTION'''}]}]
         },
-        "issuetype": {"id": "${TYPE_ID}"},
-        "parent": {"key": "${PARENT_KEY}"}
+        'issuetype': {'id': '$TYPE_ID'},
+        'parent': {'key': '$PARENT_KEY'}
     }
 }
-EOF
-)
+print(json.dumps(payload))
+")
 else
-    PAYLOAD=$(cat <<EOF
-{
-    "fields": {
-        "project": {"key": "${JIRA_PROJECT_KEY}"},
-        "summary": "${TITLE}",
-        "description": {
-            "type": "doc",
-            "version": 1,
-            "content": [{"type": "paragraph", "content": [{"type": "text", "text": "${DESCRIPTION}"}]}]
+    PAYLOAD=$(python3 -c "
+import json
+payload = {
+    'fields': {
+        'project': {'key': '$JIRA_PROJECT_KEY'},
+        'summary': '''$TITLE''',
+        'description': {
+            'type': 'doc',
+            'version': 1,
+            'content': [{'type': 'paragraph', 'content': [{'type': 'text', 'text': '''$DESCRIPTION'''}]}]
         },
-        "issuetype": {"id": "${TYPE_ID}"}
+        'issuetype': {'id': '$TYPE_ID'}
     }
 }
-EOF
-)
+print(json.dumps(payload))
+")
 fi
 
 # Create the issue

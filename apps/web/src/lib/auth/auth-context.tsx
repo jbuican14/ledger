@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useMemo } from "react";
 import { User } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserClient } from "@ledger/database";
 
 interface Profile {
   id: string;
@@ -35,7 +35,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [household, setHousehold] = useState<Household | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = useMemo(() => {
+    return createBrowserClient();
+  }, []);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -83,27 +85,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Get initial session
-    const initAuth = async () => {
+    // Listen for auth changes - this fires immediately with current session
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (session?.user) {
-          setUser(session.user);
-          await fetchProfile(session.user.id);
-        }
-      } catch (error) {
-        console.error("Auth init error:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
         if (session?.user) {
           setUser(session.user);
           await fetchProfile(session.user.id);
@@ -112,14 +98,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(null);
           setHousehold(null);
         }
+      } catch (error) {
+        console.error("Auth state change error:", error);
+      } finally {
         setIsLoading(false);
       }
-    );
+    });
 
     return () => {
-      subscription.unsubscribe();
     };
-  }, []);
+  }, [supabase]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
