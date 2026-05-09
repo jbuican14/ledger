@@ -10,7 +10,7 @@ export interface Household {
 
 export interface Profile {
   id: string;
-  household_id: string | null;
+  household_id: string;
   display_name: string | null;
   avatar_url: string | null;
   onboarding_completed: boolean;
@@ -18,17 +18,21 @@ export interface Profile {
   updated_at: string;
 }
 
+export type CategoryType = "expense" | "income";
+
 export interface Category {
   id: string;
   household_id: string;
   name: string;
   color: string;
   icon: string | null;
-  is_income: boolean;
+  type: CategoryType;
   sort_order: number;
   created_at: string;
+  updated_at: string;
 }
 
+// amount is signed: negative = expense, positive = income
 export interface Transaction {
   id: string;
   household_id: string;
@@ -37,7 +41,6 @@ export interface Transaction {
   amount: number;
   description: string | null;
   transaction_date: string;
-  is_income: boolean;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -48,7 +51,8 @@ export interface TransactionWithCategory extends Transaction {
   category: Category | null;
 }
 
-// Form types
+// Form types — `amount` is a string from the input (always positive); the
+// hook applies the sign based on the form's income/expense toggle.
 export interface TransactionFormData {
   amount: string;
   description: string;

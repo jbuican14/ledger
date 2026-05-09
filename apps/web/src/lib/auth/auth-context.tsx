@@ -1,22 +1,14 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useRef } from "react";
-import type { User } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client"; // ✅ use YOUR SSR client
+import type { User } from "@ledger/database/types";
+import { createClient } from "@/lib/supabase/client";
+import type { Profile, Household } from "@/types/database";
 
-interface Profile {
-  id: string;
-  household_id: string | null;
-  display_name: string | null;
-  avatar_url: string | null;
-  onboarding_completed: boolean;
-}
-
-interface Household {
-  id: string;
-  name: string;
-  currency: string;
-}
+// Extract types from the Supabase client
+ type SupabaseClient = ReturnType<typeof createClient>;
+ type AuthChangeEvent = Parameters<SupabaseClient['auth']['onAuthStateChange']>[0] extends (event: infer E, session: unknown) => void ? E : never;
+ type Session = Awaited<ReturnType<SupabaseClient['auth']['getSession']>>['data']['session'];
 
 interface AuthContextType {
   user: User | null;
@@ -109,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       if (!mounted.current) return;
 
       if (event === "SIGNED_IN" && session?.user) {
@@ -131,10 +123,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-
-    // 🔥 ensure middleware sees it immediately
-    window.location.href = "/login";
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("Sign out error:", err);
+    } finally {
+      // 🔥 ensure middleware sees it immediately
+      window.location.href = "/login";
+    }
   };
 
   return (

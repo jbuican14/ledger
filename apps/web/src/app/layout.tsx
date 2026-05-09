@@ -17,10 +17,10 @@ export const metadata: Metadata = {
 // Script to prevent theme flash - runs before React hydrates
 const themeScript = `
   (function() {
-    const saved = localStorage.getItem('theme');
-    const system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const saved = localStorage.getItem("theme");
+    const system = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     const theme = saved || system;
-    if (theme === 'dark') document.documentElement.classList.add('dark');
+    if (theme === "dark") document.documentElement.classList.add("dark");
   })();
 `;
 

@@ -1,8 +1,8 @@
 # Family Budget App - Product Specification
 
-> **Document Version:** 2.0
-> **Last Updated:** 2026-04-07
-> **Status:** Draft - Revised after PO Review
+> **Document Version:** 2.1
+> **Last Updated:** 2026-05-09
+> **Status:** Living document — Phase 1 in progress
 
 ---
 
@@ -49,6 +49,8 @@ A simple expense tracker with **recurring-awareness** — users see what's expec
 | Spreadsheets | No recurring intelligence, tedious |
 | Copilot/Mint | US-focused, aggregator model (we're manual-first) |
 
+**Positioning:** Manual-first, GBP-native, multi-user via invite.
+
 ---
 
 ## 2. User Personas
@@ -66,6 +68,8 @@ A simple expense tracker with **recurring-awareness** — users see what's expec
 - Wants quick entry, minimal friction
 - Needs visibility, not management overhead
 
+> Partner access requires the household invite flow (Epic 10), which lands in Phase 2. In Phase 1 each signup creates a single-user household.
+
 ---
 
 ## 3. Core Value Proposition
@@ -81,20 +85,23 @@ Not another budget app. Not another tracker. A tool that:
 
 ### 3.2 Core Jobs-to-be-Done
 
-| Job | Feature |
-|-----|---------|
-| "I want to log an expense quickly" | Quick add (2 fields) |
-| "I want to know what bills are coming" | Recurring expense list |
-| "I want to see this month's spending" | Monthly dashboard view |
-| "I want my partner to see too" | Household sharing |
+| Job | Feature | Phase |
+|-----|---------|-------|
+| "I want to log an expense quickly" | Quick add (2 fields) | 1 |
+| "I want to know what bills are coming" | Recurring expense list | 2 |
+| "I want to see this month's spending" | Monthly dashboard view | 2 |
+| "I want my partner to see too" | Household invite & sharing | 2 |
 
 ### 3.3 What We're NOT Building (v1)
 
+Feature exclusions:
 - Full budgeting system with envelopes
 - Bank connection / Open Banking
 - Receipt OCR
 - Complex analytics
-- Subscription billing
+
+Business-model exclusions (out of scope until product validation):
+- Subscription billing / paid tiers
 
 ---
 
@@ -121,9 +128,9 @@ Every empty state should:
 
 ### 4.4 Feedback Builds Habits
 
-- Celebrate small wins ("5 days logging streak!")
 - Show progress ("20% less than last week")
 - Surface insights proactively
+- Celebrate milestones (streaks/insights ship in Phase 2 — see Epic 14)
 
 ### 4.5 Polish Signals Quality
 
@@ -169,67 +176,103 @@ Every empty state should:
 
 ```
 Household (tenant)
-├── has many → Users
+├── has many → Profiles (users)
 ├── has many → Categories
 ├── has many → Transactions
 ├── has many → Recurring Transactions
-├── has one → Budget (optional)
+├── has many → Invitations (Phase 2)
+├── has one  → Budget (optional)
 └── has many → Goals (Phase 2)
 ```
 
-Row Level Security ensures data isolation.
+Every signup creates a household. Single-user households are the default; additional users join an existing household via the invite flow (Epic 10). Row Level Security gates all access by `household_id`.
+
+**Standard RLS shape (applied to every tenant table):**
+
+```sql
+CREATE POLICY tenant_isolation ON <table>
+  USING (
+    household_id IN (
+      SELECT household_id FROM profiles WHERE id = auth.uid()
+    )
+  );
+```
+
+The same predicate is reused for `SELECT`, `INSERT`, `UPDATE`, and `DELETE`. Soft-deleted rows (`deleted_at IS NOT NULL`) remain visible to RLS so undo can restore them; the application layer filters them out of normal reads.
 
 ---
 
 ## 6. Database Schema
 
+> **Conventions:** All amounts use signed `DECIMAL(12, 2)` — negative = expense, positive = income. Every tenant table carries `household_id` (RLS key) and `updated_at` (sync/debug/conflict-detection).
+
 ### 6.1 Core Tables (Phase 1)
 
 ```sql
--- Profiles (extends auth.users)
-CREATE TABLE profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id),
-    household_id UUID REFERENCES households(id),
-    display_name TEXT,
-    avatar_url TEXT,
-    onboarding_completed BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Households
+-- Households (tenant)
 CREATE TABLE households (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL DEFAULT 'My Finances',
-    currency TEXT DEFAULT 'GBP',
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    currency TEXT NOT NULL DEFAULT 'GBP',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Profiles (extends auth.users)
+CREATE TABLE profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    household_id UUID NOT NULL REFERENCES households(id) ON DELETE RESTRICT,
+    display_name TEXT,
+    avatar_url TEXT,
+    onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Categories
 CREATE TABLE categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    household_id UUID REFERENCES households(id) ON DELETE CASCADE,
+    household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     color TEXT NOT NULL,
     icon TEXT,
-    is_income BOOLEAN DEFAULT FALSE,
-    sort_order INTEGER DEFAULT 0,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    type TEXT NOT NULL DEFAULT 'expense'
+        CHECK (type IN ('expense', 'income')),
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (household_id, name)
 );
 
 -- Transactions
 CREATE TABLE transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    household_id UUID REFERENCES households(id) ON DELETE CASCADE,
-    user_id UUID REFERENCES profiles(id),
-    category_id UUID REFERENCES categories(id),
-    amount DECIMAL(12, 2) NOT NULL,
+    household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+    amount DECIMAL(12, 2) NOT NULL CHECK (amount <> 0),
     description TEXT,
     transaction_date DATE NOT NULL DEFAULT CURRENT_DATE,
-    is_income BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ -- soft delete for undo
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
 );
+
+CREATE INDEX idx_transactions_household_date
+    ON transactions (household_id, transaction_date DESC)
+    WHERE deleted_at IS NULL;
 ```
+
+**Notes on the schema:**
+
+- **Signed amounts.** A £45.20 grocery spend stores as `-45.20`; a £2,000 salary as `2000.00`. `SUM(amount)` over a month gives net cashflow directly. The UI renders the sign + currency formatting; the database stays neutral.
+- **`category.type`** drives UI grouping (income picker vs expense picker) and seeding rules. The transaction's sign is the source of truth for reporting — there is no `is_income` column on transactions to drift out of sync.
+- **`ON DELETE` semantics:**
+  - `category_id` → `SET NULL`: deleting a category preserves the transaction (orphan with NULL category until reassigned).
+  - `user_id` → `SET NULL`: a profile leaving the household preserves the household's financial history.
+  - `household_id` → `CASCADE`: deleting a household removes all its data (true tenant deletion).
+  - `profiles.household_id` → `RESTRICT`: a household cannot be deleted while members remain — they must leave first.
+- **Soft delete.** `deleted_at` lets us implement undo. The partial index `WHERE deleted_at IS NULL` keeps active queries fast.
 
 ### 6.2 Phase 2 Tables
 
@@ -237,35 +280,56 @@ CREATE TABLE transactions (
 -- Recurring Transactions
 CREATE TABLE recurring_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    household_id UUID REFERENCES households(id) ON DELETE CASCADE,
-    category_id UUID REFERENCES categories(id),
+    household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+    category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
     name TEXT NOT NULL,
-    amount DECIMAL(12, 2) NOT NULL,
-    frequency TEXT NOT NULL, -- 'weekly' | 'monthly' | 'yearly'
+    amount DECIMAL(12, 2) NOT NULL CHECK (amount <> 0), -- signed, same convention
+    frequency TEXT NOT NULL CHECK (frequency IN ('weekly', 'monthly', 'yearly')),
     next_due_date DATE,
-    is_income BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Household Invitations
+CREATE TABLE household_invitations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+    invited_email TEXT NOT NULL,
+    invited_by UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    token TEXT NOT NULL UNIQUE,
+    status TEXT NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'accepted', 'expired', 'revoked')),
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    accepted_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_invitations_pending_email
+    ON household_invitations (invited_email)
+    WHERE status = 'pending';
 
 -- Goals
 CREATE TABLE goals (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    household_id UUID REFERENCES households(id) ON DELETE CASCADE,
+    household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    target_amount DECIMAL(12, 2) NOT NULL,
-    current_amount DECIMAL(12, 2) DEFAULT 0,
+    target_amount DECIMAL(12, 2) NOT NULL CHECK (target_amount > 0),
+    current_amount DECIMAL(12, 2) NOT NULL DEFAULT 0,
     target_date DATE,
     icon TEXT,
-    status TEXT DEFAULT 'active',
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    status TEXT NOT NULL DEFAULT 'active'
+        CHECK (status IN ('active', 'completed', 'archived')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Budget (simple, one per household)
+-- Budget (one per household)
 CREATE TABLE budgets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    household_id UUID REFERENCES households(id) ON DELETE CASCADE UNIQUE,
-    monthly_amount DECIMAL(12, 2) NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    household_id UUID NOT NULL UNIQUE REFERENCES households(id) ON DELETE CASCADE,
+    monthly_amount DECIMAL(12, 2) NOT NULL CHECK (monthly_amount > 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
 
@@ -275,6 +339,21 @@ CREATE TABLE budgets (
 
 > **Goal:** User logs first expense in <60 seconds
 > **Scope:** Foundation + Auth + Navigation + Categories + Transactions + Onboarding (light) + Empty States + Polish
+
+### Phase 1 Progress (as of 2026-05-09)
+
+| Epic | Status |
+|------|--------|
+| 1: Project Foundation | Merged |
+| 2: Authentication | Merged |
+| 3: Navigation & Layout | Merged |
+| 4: Category Management | Merged |
+| 5: Transaction Management | In progress (`feature/epic-4-transactions`) |
+| 6: Onboarding (Light) | Merged (light version) |
+| 7: Empty States | Pending |
+| 8: Polish | Pending |
+
+> The branch `feature/epic-4-transactions` predates this v2.1 renumbering and won't be renamed mid-flight; treat it as Epic 5 work. Future branches should follow the new numbering: `feature/epic-<n>-<slug>`.
 
 ---
 
@@ -286,11 +365,11 @@ CREATE TABLE budgets (
 | 1.2 | Next.js app | Must | Medium | App Router + Tailwind + shadcn/ui installed |
 | 1.3 | Supabase setup | Must | Low | Project created, local dev with `supabase start` |
 | 1.4 | Database schema (Phase 1) | Must | Medium | profiles, households, categories, transactions tables |
-| 1.5 | RLS policies | Must | Medium | Users only access own household data |
+| 1.5 | RLS policies | Must | Medium | Users only access own household data (see §5.3 for policy shape) |
 | 1.6 | Environment config | Must | Low | .env.local, .env.example documented |
 | 1.7 | CI pipeline | Should | Medium | GitHub Actions: lint, typecheck, build |
 
-**Definition of Done:** Fresh clone → `pnpm install` → `pnpm dev` → app runs with Supabase connected
+**Definition of Done:** Fresh clone → `pnpm install` → `pnpm dev` → app runs with Supabase connected.
 
 ---
 
@@ -302,12 +381,12 @@ CREATE TABLE budgets (
 | 2.2 | Email login | Must | Low | Success → dashboard, failure → error message |
 | 2.3 | Google OAuth | Should | Medium | One-click login, creates profile if new |
 | 2.4 | Password reset | Must | Medium | Email sent, link works, password updated |
-| 2.5 | Household creation | Must | Medium | Created automatically after first login |
+| 2.5 | Household auto-creation on signup | Must | Medium | Household row created with default name "My Finances", profile linked via `profiles.household_id` |
 | 2.6 | Auth context | Must | Medium | `useAuth()` returns user, household, isLoading |
 | 2.7 | Protected routes | Must | Medium | Middleware redirects unauthenticated to /login |
 | 2.8 | Logout | Must | Low | Clears session, redirects to login |
 
-**Definition of Done:** User can sign up → verify email → see dashboard
+**Definition of Done:** User can sign up → verify email → land in onboarding (Epic 6) with a household pre-created.
 
 ---
 
@@ -326,7 +405,7 @@ CREATE TABLE budgets (
 - Dashboard (home icon)
 - Transactions (list icon)
 - Settings (gear icon)
-- [Goals - Phase 2]
+- [Goals — Phase 2]
 
 ---
 
@@ -337,24 +416,25 @@ CREATE TABLE budgets (
 | 4.1 | Default categories | Must | Low | Seeded on household creation |
 | 4.2 | UK template | Should | Low | One-click applies UK-specific categories |
 | 4.3 | Category list (settings) | Must | Low | Grid/list of all categories |
-| 4.4 | Add category | Must | Medium | Name, color picker, icon picker |
+| 4.4 | Add category | Must | Medium | Name, color picker, icon picker, type (expense/income) |
 | 4.5 | Edit category | Must | Low | Update name, color, icon |
-| 4.6 | Delete category | Must | Medium | Confirmation, reassign transactions option |
+| 4.6 | Delete category | Must | Medium | Confirmation; transactions are reassigned (FK is `ON DELETE SET NULL`, app prompts to reassign first) |
 | 4.7 | Icon picker | Should | Medium | Grid of common expense icons |
 
 **Default Categories:**
+
 | Name | Color | Icon | Type |
 |------|-------|------|------|
-| Groceries | Green | 🛒 | Expense |
-| Bills | Blue | 📄 | Expense |
-| Transport | Orange | 🚗 | Expense |
-| Entertainment | Purple | 🎬 | Expense |
-| Eating Out | Red | 🍽 | Expense |
-| Shopping | Pink | 🛍 | Expense |
-| Health | Teal | 💊 | Expense |
-| Other | Grey | 📦 | Expense |
-| Salary | Green | 💰 | Income |
-| Other Income | Green | 💵 | Income |
+| Groceries | Green | 🛒 | expense |
+| Bills | Blue | 📄 | expense |
+| Transport | Orange | 🚗 | expense |
+| Entertainment | Purple | 🎬 | expense |
+| Eating Out | Red | 🍽️ | expense |
+| Shopping | Pink | 🛍️ | expense |
+| Health | Teal | 💊 | expense |
+| Other | Grey | 📦 | expense |
+| Salary | Green | 💰 | income |
+| Other Income | Green | 💵 | income |
 
 **UK Template Additions:**
 - Council Tax
@@ -368,15 +448,14 @@ CREATE TABLE budgets (
 | ID | Story | Priority | Complexity | Acceptance Criteria |
 |----|-------|----------|------------|---------------------|
 | 5.1 | Add transaction modal | Must | Medium | Modal opens from FAB, closes on submit/cancel |
-| 5.2 | Quick add form | Must | Low | Amount + category only, date defaults to today |
+| 5.2 | Quick add form | Must | Low | Amount + category only, date defaults to today; sign derived from category type |
 | 5.3 | Expanded form | Must | Medium | "More details" reveals: date picker, description |
 | 5.4 | "Add another" checkbox | Must | Low | When checked, form clears but stays open |
 | 5.5 | Transaction list | Must | High | Grouped by day with daily subtotals |
 | 5.6 | Edit transaction | Must | Medium | Click row → edit modal |
-| 5.7 | Delete transaction | Must | Low | Soft delete, shows undo toast |
-| 5.8 | Income toggle | Must | Low | Switch between expense/income |
+| 5.7 | Soft delete with undo | Must | Medium | Delete sets `deleted_at`; toast offers Undo for 5 seconds |
+| 5.8 | Income/expense toggle | Must | Low | Switch between expense/income (flips amount sign + filters category list by type) |
 | 5.9 | Optimistic UI | Must | Medium | Show change immediately, sync background |
-| 5.10 | Undo delete | Must | Medium | Toast with "Undo" for 5 seconds |
 
 **Transaction List Design:**
 ```
@@ -393,27 +472,27 @@ CREATE TABLE budgets (
 
 ---
 
-### Epic 0: Onboarding (Light)
+### Epic 6: Onboarding (Light)
 
 | ID | Story | Priority | Complexity | Acceptance Criteria |
 |----|-------|----------|------------|---------------------|
-| 0.1 | Onboarding wrapper | Must | Low | 3-step wizard with progress dots |
-| 0.2 | Step 1: Household name | Must | Low | Text input, "My Finances" default, skip = default |
-| 0.3 | Step 2: Currency | Must | Low | Dropdown, GBP default, 5 common options |
-| 0.4 | Step 3: Category template | Must | Low | 3 choices: Default, UK, Custom later |
-| 0.5 | Complete → Dashboard | Must | Low | Sets onboarding_completed = true |
+| 6.1 | Onboarding wrapper | Must | Low | 3-step wizard with progress dots |
+| 6.2 | Step 1: Household name | Must | Low | Text input, defaults to "My Finances" (already created in Epic 2.5); skip keeps default |
+| 6.3 | Step 2: Currency | Must | Low | Dropdown, GBP default, 5 common options |
+| 6.4 | Step 3: Category template | Must | Low | 3 choices: Default, UK, Custom later |
+| 6.5 | Complete → Dashboard | Must | Low | Sets `onboarding_completed = true` |
 
-**Total onboarding time target: 30-60 seconds**
+**Total onboarding time target: 30–60 seconds.**
 
 ---
 
-### Epic E: Empty States
+### Epic 7: Empty States
 
 | ID | Story | Priority | Complexity | Acceptance Criteria |
 |----|-------|----------|------------|---------------------|
-| E.1 | Empty dashboard | Must | Low | Welcome message + "Add first expense" CTA |
-| E.2 | Empty transaction list | Must | Low | Illustration + encouraging message + CTA |
-| E.3 | Empty category list | Should | Low | Shouldn't happen, but graceful fallback |
+| 7.1 | Empty dashboard | Must | Low | Welcome message + "Add first expense" CTA |
+| 7.2 | Empty transaction list | Must | Low | Illustration + encouraging message + CTA |
+| 7.3 | Empty category list | Should | Low | Shouldn't happen, but graceful fallback |
 
 **Empty Transaction State:**
 ```
@@ -433,15 +512,15 @@ CREATE TABLE budgets (
 
 ---
 
-### Epic P: Polish
+### Epic 8: Polish
 
 | ID | Story | Priority | Complexity | Acceptance Criteria |
 |----|-------|----------|------------|---------------------|
-| P.1 | Loading skeletons | Must | Medium | Skeleton UI for all lists and cards |
-| P.2 | Error boundaries | Must | Medium | Graceful error UI, retry button |
-| P.3 | Offline indicator | Should | Low | Banner when offline |
-| P.4 | Success toasts | Must | Low | Subtle confirmation on add/edit |
-| P.5 | Form validation | Must | Medium | Inline errors, disabled submit when invalid |
+| 8.1 | Loading skeletons | Must | Medium | Skeleton UI for all lists and cards |
+| 8.2 | Error boundaries | Must | Medium | Graceful error UI, retry button |
+| 8.3 | Offline indicator | Should | Low | Banner when offline |
+| 8.4 | Success toasts | Must | Low | Subtle confirmation on add/edit |
+| 8.5 | Form validation | Must | Medium | Inline errors, disabled submit when invalid |
 
 ---
 
@@ -453,32 +532,34 @@ CREATE TABLE budgets (
 | 2: Auth | 8 | 7 | 1 | 0 |
 | 3: Navigation | 6 | 6 | 0 | 0 |
 | 4: Categories | 7 | 5 | 2 | 0 |
-| 5: Transactions | 10 | 10 | 0 | 0 |
-| 0: Onboarding | 5 | 5 | 0 | 0 |
-| E: Empty States | 3 | 2 | 1 | 0 |
-| P: Polish | 5 | 4 | 1 | 0 |
-| **Total** | **51** | **45** | **6** | **0** |
+| 5: Transactions | 9 | 9 | 0 | 0 |
+| 6: Onboarding | 5 | 5 | 0 | 0 |
+| 7: Empty States | 3 | 2 | 1 | 0 |
+| 8: Polish | 5 | 4 | 1 | 0 |
+| **Total** | **50** | **44** | **6** | **0** |
+
+> Phase 1 dropped from 51 to 50 stories: Epic 5.7 (delete) and 5.10 (undo) merged into a single "Soft delete with undo" story.
 
 ---
 
 ## 8. Phase 2: Engagement
 
-> **Goal:** Build habits with recurring awareness and goal tracking
-> **Prerequisite:** Phase 1 complete, users actively logging
+> **Goal:** Build habits with recurring awareness, sharing, and goal tracking.
+> **Prerequisite:** Phase 1 complete, users actively logging.
 
 ---
 
-### Epic 11: Recurring Transactions
+### Epic 9: Recurring Transactions
 
 | ID | Story | Priority | Complexity | Acceptance Criteria |
 |----|-------|----------|------------|---------------------|
-| 11.1 | Recurring schema | Must | Medium | Table created with RLS |
-| 11.2 | Add recurring | Must | Medium | Form: name, amount, category, frequency |
-| 11.3 | Recurring list | Must | Low | View all recurring items in settings |
-| 11.4 | Edit recurring | Must | Low | Modify details |
-| 11.5 | Delete recurring | Must | Low | With confirmation |
-| 11.6 | Monthly banner | Must | High | Dashboard: "3 items due this month - Add?" |
-| 11.7 | Quick-add from banner | Must | Medium | One click adds selected items as transactions |
+| 9.1 | Recurring schema | Must | Medium | Table created with RLS |
+| 9.2 | Add recurring | Must | Medium | Form: name, amount, category, frequency |
+| 9.3 | Recurring list | Must | Low | View all recurring items in settings |
+| 9.4 | Edit recurring | Must | Low | Modify details |
+| 9.5 | Delete recurring | Must | Low | With confirmation |
+| 9.6 | Monthly banner | Must | High | Dashboard: "3 items due this month — Add?" |
+| 9.7 | Quick-add from banner | Must | Medium | One click adds selected items as transactions |
 
 **Monthly Banner UX:**
 ```
@@ -495,18 +576,50 @@ CREATE TABLE budgets (
 
 ---
 
-### Epic 7: Savings Goals
+### Epic 10: Household Invites
 
 | ID | Story | Priority | Complexity | Acceptance Criteria |
 |----|-------|----------|------------|---------------------|
-| 7.1 | Goals schema | Must | Low | Table created |
-| 7.2 | Create goal | Must | Medium | Name, target amount, optional date |
-| 7.3 | Goals dashboard widget | Must | Medium | Cards with progress bars |
-| 7.4 | Goal detail page | Must | Medium | Full info, contribution history |
-| 7.5 | Add contribution | Must | Medium | Record amount added to goal |
-| 7.6 | Edit goal | Must | Low | Update details |
-| 7.7 | Archive goal | Must | Low | Mark complete or abandoned |
-| 7.8 | Empty goals state | Must | Low | "What are you saving for?" + suggestions |
+| 10.1 | Invitations schema | Must | Low | `household_invitations` table + RLS (only inviter & invitee can see) |
+| 10.2 | Send invite | Must | Medium | Settings page: email input → row inserted, magic-link email sent, 7-day expiry |
+| 10.3 | Accept invite | Must | High | Token URL → if not signed up, signup flow first; on accept, set invitee's `profiles.household_id` to the host's |
+| 10.4 | Decline / expire | Must | Low | Status transitions: pending → accepted / expired / revoked |
+| 10.5 | Revoke pending invite | Must | Low | Inviter can cancel before acceptance |
+| 10.6 | Member list | Must | Low | Settings: list current household members + pending invites |
+| 10.7 | Leave household | Should | Medium | Member can leave; if last member, household + data archived (configurable) |
+
+**Acceptance flow:**
+```
+A invites b@example.com
+  → row in household_invitations (status=pending, token=…)
+  → email sent to B with link /invite?token=…
+
+B clicks link
+  → if not authed: signup → profile created in a *new* household H_B
+  → on accept: profile.household_id reassigned to A's household H_A,
+    H_B (now empty) is deleted
+  → invitation.status = accepted, accepted_at = now()
+```
+
+**Constraints (Phase 2 scope):**
+- Invited user sees only the host household's data — RLS enforces this automatically once `household_id` is reassigned.
+- One household per user at a time (matches single `profiles.household_id` column).
+- Multi-household membership and household-switching are deferred (see §10).
+
+---
+
+### Epic 11: Savings Goals
+
+| ID | Story | Priority | Complexity | Acceptance Criteria |
+|----|-------|----------|------------|---------------------|
+| 11.1 | Goals schema | Must | Low | Table created |
+| 11.2 | Create goal | Must | Medium | Name, target amount, optional date |
+| 11.3 | Goals dashboard widget | Must | Medium | Cards with progress bars |
+| 11.4 | Goal detail page | Must | Medium | Full info, contribution history |
+| 11.5 | Add contribution | Must | Medium | Record amount added to goal |
+| 11.6 | Edit goal | Must | Low | Update details |
+| 11.7 | Archive goal | Must | Low | Mark complete or abandoned |
+| 11.8 | Empty goals state | Must | Low | "What are you saving for?" + suggestions |
 
 ---
 
@@ -521,28 +634,28 @@ CREATE TABLE budgets (
 
 ---
 
-### Epic 8: Dashboard (Enhanced)
+### Epic 13: Dashboard (Enhanced)
 
 | ID | Story | Priority | Complexity | Acceptance Criteria |
 |----|-------|----------|------------|---------------------|
-| 8.1 | Dashboard layout | Must | Medium | Card grid, responsive |
-| 8.2 | This month spending | Must | Low | Total spent card |
-| 8.3 | Budget status | Must | Medium | Remaining vs total (if budget set) |
-| 8.4 | Goals widget | Must | Low | Progress bars for active goals |
-| 8.5 | Recurring banner | Must | Low | (from Epic 11) |
-| 8.6 | Category breakdown | Should | Medium | Pie chart of spending |
-| 8.7 | Recent transactions | Must | Low | Last 5 items |
+| 13.1 | Dashboard layout | Must | Medium | Card grid, responsive |
+| 13.2 | This month spending | Must | Low | Total spent card |
+| 13.3 | Budget status | Must | Medium | Remaining vs total (if budget set) |
+| 13.4 | Goals widget | Must | Low | Progress bars for active goals |
+| 13.5 | Recurring banner | Must | Low | (sourced from Epic 9) |
+| 13.6 | Category breakdown | Should | Medium | Pie chart of spending |
+| 13.7 | Recent transactions | Must | Low | Last 5 items |
 
 ---
 
-### Epic F: Feedback & Insights
+### Epic 14: Feedback & Insights
 
 | ID | Story | Priority | Complexity | Acceptance Criteria |
 |----|-------|----------|------------|---------------------|
-| F.1 | Spending comparison | Should | Medium | "20% less than last week" |
-| F.2 | Goal progress | Should | Low | "On track!" / "Falling behind" |
-| F.3 | Logging streak | Could | Low | "5 days in a row!" |
-| F.4 | Category insight | Could | Medium | "Food spending higher than usual" |
+| 14.1 | Spending comparison | Should | Medium | "20% less than last week" |
+| 14.2 | Goal progress | Should | Low | "On track!" / "Falling behind" |
+| 14.3 | Logging streak | Could | Low | "5 days in a row!" |
+| 14.4 | Category insight | Could | Medium | "Food spending higher than usual" |
 
 ---
 
@@ -550,63 +663,64 @@ CREATE TABLE budgets (
 
 | Epic | Stories |
 |------|---------|
-| 11: Recurring | 7 |
-| 7: Goals | 8 |
+| 9: Recurring | 7 |
+| 10: Invites | 7 |
+| 11: Goals | 8 |
 | 12: Budget | 4 |
-| 8: Dashboard | 7 |
-| F: Feedback | 4 |
-| **Total** | **30** |
+| 13: Dashboard | 7 |
+| 14: Feedback | 4 |
+| **Total** | **37** |
 
 ---
 
 ## 9. Phase 3: Power Features
 
-> **Goal:** Advanced capabilities for engaged users
-> **Prerequisite:** Phase 2 complete, users requesting these features
+> **Goal:** Advanced capabilities for engaged users.
+> **Prerequisite:** Phase 2 complete, users requesting these features.
 
 ---
 
-### Epic 6: CSV Import
+### Epic 15: CSV Import
 
 | ID | Story | Complexity |
 |----|-------|------------|
-| 6.1 | File upload | Medium |
-| 6.2 | Column mapping | High |
-| 6.3 | Preview table | Medium |
-| 6.4 | Duplicate detection | High |
-| 6.5 | Import confirmation | Medium |
+| 15.1 | File upload | Medium |
+| 15.2 | Column mapping | High |
+| 15.3 | Preview table | Medium |
+| 15.4 | Duplicate detection | High |
+| 15.5 | Import confirmation | Medium |
 
 ---
 
-### Epic 5.x: Transaction Enhancements
+### Epic 16: Transaction Enhancements
 
 | ID | Story | Complexity |
 |----|-------|------------|
-| 5.11 | Filter by category | Medium |
-| 5.12 | Filter by date range | Medium |
-| 5.13 | Search by description | Medium |
-| 5.14 | Bulk delete | High |
+| 16.1 | Filter by category | Medium |
+| 16.2 | Filter by date range | Medium |
+| 16.3 | Search by description | Medium |
+| 16.4 | Bulk delete | High |
 
 ---
 
-### Epic 13: Monthly View
+### Epic 17: Monthly View
 
 | ID | Story | Complexity |
 |----|-------|------------|
-| 13.1 | Monthly summary page | Medium |
-| 13.2 | Recurring vs one-off split | Medium |
-| 13.3 | Month selector | Low |
-| 13.4 | Export CSV | Medium |
+| 17.1 | Monthly summary page | Medium |
+| 17.2 | Recurring vs one-off split | Medium |
+| 17.3 | Month selector | Low |
+| 17.4 | Export CSV | Medium |
 
 ---
 
-### Epic 12.x: Budget Enhancements
+### Epic 18: Budget Enhancements
 
 | ID | Story | Complexity |
 |----|-------|------------|
-| 12.5 | Category-level budgets | High |
-| 12.6 | 80% alert notification | High |
-| 12.7 | Over-budget alert | Medium |
+| 18.1 | Category-level budgets | High |
+| 18.2 | 80% alert notification | High |
+| 18.3 | Over-budget alert | Medium |
 
 ---
 
@@ -616,7 +730,8 @@ These are **not planned** but documented for future consideration:
 
 | Feature | Rationale for Deferral |
 |---------|------------------------|
-| Household invite | Complexity, low early need |
+| Multi-household per user | Single-household model is sufficient for MVP; would require a join table |
+| Household switcher | Depends on multi-household support |
 | PDF statements | Nice-to-have, not core |
 | Category merge | Edge case |
 | Category drag-sort | Nice-to-have |
@@ -634,12 +749,17 @@ These are **not planned** but documented for future consideration:
 
 | Term | Definition |
 |------|------------|
-| Household | A tenant/account grouping users |
-| Transaction | A single expense or income entry |
-| Category | Classification for transactions |
+| Household | A tenant grouping users; every signup creates one |
+| Profile | A user's row in `profiles`, linked 1:1 to `auth.users` and assigned to one household |
+| Transaction | A single expense or income entry; signed amount (negative = expense, positive = income) |
+| Category | Classification for transactions, typed as `expense` or `income` |
 | Goal | A savings target |
 | Budget | Monthly spending limit |
-| Recurring | An expected regular expense |
+| Recurring | An expected regular expense or income |
+| Quick add | The 2-field add-transaction form (amount + category) accessed via the FAB |
+| Recurring banner | Dashboard prompt listing this month's recurring items for one-click logging |
+| Soft delete | Marking a row deleted via `deleted_at` instead of removing it; supports undo |
+| Invite | Time-limited token granting another user access to your household |
 | FAB | Floating Action Button |
 | RLS | Row Level Security |
 | Optimistic UI | Show changes before server confirms |
@@ -652,15 +772,16 @@ These are **not planned** but documented for future consideration:
 |---------|------|---------|
 | 1.0 | 2026-04-07 | Initial draft (too broad) |
 | 2.0 | 2026-04-07 | Revised after PO review: leaner MVP, progressive phases, added empty states + polish + feedback |
+| 2.1 | 2026-05-09 | Audit pass. Renumbered epics for coherence (Phase 1: 1–8, Phase 2: 9–14, Phase 3: 15–18). Switched to **signed-amount** transaction model — dropped `is_income` from transactions, added `category.type`. Tightened FK `ON DELETE` semantics across all tables. Added `updated_at` to every tenant table. Pinned the standard RLS policy shape in §5.3. Promoted Household Invites from deferred to Phase 2 Epic 10 (with full schema + acceptance flow) to resolve the partner-persona contradiction. Merged Epic 5.7/5.10 into a single "Soft delete with undo" story. Added Phase 1 progress tracker, positioning line in §1.4, and glossary entries (Quick add, Recurring banner, Soft delete, Profile). Fixed emoji variation selectors on 🍽️ and 🛍️. |
 
 ---
 
 ## Next Steps
 
-1. **Review this spec** - confirm alignment
-2. **Refine Epic 1** - detailed story review before building
-3. **Build Epic 1** - story by story with check-ins
-4. **Repeat** for each epic
+1. **Review this spec** — confirm alignment with v2.1 changes.
+2. **Refine each upcoming epic** — detailed story review before building.
+3. **Build epic by epic** with check-ins.
+4. **Update this doc** as phases progress (it's a living document).
 
 ---
 

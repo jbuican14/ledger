@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft } from "lucide-react";
 
+const supabase = createClient();
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +22,6 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });

@@ -5,13 +5,13 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import type { Category } from "@/types/database";
 
+const supabase = createClient();
+
 export function useCategories() {
   const { household } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const supabase = createClient();
 
   useEffect(() => {
     if (!household?.id) {
@@ -27,7 +27,7 @@ export function useCategories() {
         .from("categories")
         .select("*")
         .eq("household_id", household.id)
-        .order("is_income", { ascending: true })
+        .order("type", { ascending: true })
         .order("sort_order", { ascending: true });
 
       if (fetchError) {
@@ -42,8 +42,8 @@ export function useCategories() {
     fetchCategories();
   }, [household?.id]);
 
-  const expenseCategories = categories.filter((c) => !c.is_income);
-  const incomeCategories = categories.filter((c) => c.is_income);
+  const expenseCategories = categories.filter((c) => c.type === "expense");
+  const incomeCategories = categories.filter((c) => c.type === "income");
 
   return {
     categories,

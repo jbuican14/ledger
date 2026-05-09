@@ -6,7 +6,6 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./client": "./src/client.ts",
     "./types": "./src/types.ts"
   },
   "scripts": {
@@ -14,7 +13,6 @@
     "generate-types": "supabase gen types typescript --local > src/database.types.ts"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.43.0"
   },
   "devDependencies": {

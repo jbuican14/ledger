@@ -9,64 +9,54 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/toast";
 
+const supabase = createClient();
+
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, refreshProfile } = useAuth();
+  const { user, household, refreshProfile } = useAuth();
   const { showToast } = useToast();
-  const [householdName, setHouseholdName] = useState("My Finances");
-  const [currency, setCurrency] = useState("GBP");
+  const [householdName, setHouseholdName] = useState(
+    household?.name ?? "My Finances",
+  );
+  const [currency, setCurrency] = useState(household?.currency ?? "GBP");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!user || !household) {
+      setError("Session not ready — please refresh");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const supabase = createClient();
-
-      // Create household
-      const { data: household, error: householdError } = await supabase
+      // Household + profile + default categories already exist from the
+      // signup trigger. Onboarding just personalises the household and
+      // marks the user as done.
+      const { error: householdError } = await supabase
         .from("households")
-        .insert({
-          name: householdName,
-          currency: currency,
-        })
-        .select()
-        .single();
+        .update({ name: householdName, currency })
+        .eq("id", household.id);
 
       if (householdError) {
         setError(householdError.message);
         return;
       }
 
-      // Update profile with household_id and mark onboarding complete
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({
-          household_id: household.id,
-          onboarding_completed: true,
-        })
-        .eq("id", user?.id);
+        .update({ onboarding_completed: true })
+        .eq("id", user.id);
 
       if (profileError) {
         setError(profileError.message);
         return;
       }
 
-      // Create default categories
-      const { error: categoryError } = await supabase.rpc(
-        "create_default_categories",
-        { p_household_id: household.id }
-      );
-
-      if (categoryError) {
-        console.error("Failed to create default categories:", categoryError);
-        // Don't block onboarding if categories fail
-      }
-
-      // Refresh profile and redirect
       await refreshProfile();
       showToast("Welcome to Ledger!", "success");
       router.push("/dashboard");

@@ -78,14 +78,14 @@ export function TransactionList({
                   </p>
                 </div>
 
-                {/* Amount */}
+                {/* Amount — sign comes from the value itself */}
                 <div
                   className={cn(
                     "text-right font-medium",
-                    transaction.is_income ? "text-green-600" : "text-foreground"
+                    transaction.amount >= 0 ? "text-green-600" : "text-foreground"
                   )}
                 >
-                  {transaction.is_income ? "+" : "-"}
+                  {transaction.amount >= 0 ? "+" : ""}
                   {formatAmount(transaction.amount, currency)}
                 </div>
               </button>

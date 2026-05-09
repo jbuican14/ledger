@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { Eye, EyeOff } from "lucide-react";
 
+const supabase = createClient();
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -28,7 +30,6 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -49,7 +50,6 @@ export function LoginForm() {
   };
 
   const handleGoogleLogin = async () => {
-    const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {

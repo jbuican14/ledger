@@ -17,7 +17,7 @@ import {
 import type { TransactionWithCategory } from "@/types/database";
 
 export default function TransactionsPage() {
-  const { household, user } = useAuth();
+  const { household } = useAuth();
   const {
     groupedTransactions,
     totals,
@@ -60,7 +60,6 @@ export default function TransactionsPage() {
   };
 
   const handleDelete = async () => {
-    console.log("User id:", user?.id, "User household:", household?.id, "Transaction household:", selectedTransaction?.household_id);
     try {
       if (selectedTransaction) {
         await deleteTransaction(selectedTransaction.id);

@@ -5,13 +5,13 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import type { TransactionWithCategory, TransactionFormData } from "@/types/database";
 
+const supabase = createClient();
+
 export function useTransactions() {
   const { user, household } = useAuth();
   const [transactions, setTransactions] = useState<TransactionWithCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const supabase = createClient();
 
   const fetchTransactions = useCallback(async () => {
     if (!household?.id) {
@@ -40,11 +40,17 @@ export function useTransactions() {
     }
 
     setIsLoading(false);
-  }, [household?.id, supabase]);
+  }, [household?.id]);
 
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
+
+  // Convert form input (positive amount + is_income flag) to a signed amount.
+  const toSignedAmount = (formData: TransactionFormData): number => {
+    const value = Math.abs(parseFloat(formData.amount));
+    return formData.is_income ? value : -value;
+  };
 
   const addTransaction = async (formData: TransactionFormData) => {
     if (!household?.id || !user?.id) {
@@ -57,10 +63,9 @@ export function useTransactions() {
         household_id: household.id,
         user_id: user.id,
         category_id: formData.category_id || null,
-        amount: parseFloat(formData.amount),
+        amount: toSignedAmount(formData),
         description: formData.description || null,
         transaction_date: formData.transaction_date,
-        is_income: formData.is_income,
       })
       .select(`
         *,
@@ -81,10 +86,9 @@ export function useTransactions() {
       .from("transactions")
       .update({
         category_id: formData.category_id || null,
-        amount: parseFloat(formData.amount),
+        amount: toSignedAmount(formData),
         description: formData.description || null,
         transaction_date: formData.transaction_date,
-        is_income: formData.is_income,
       })
       .eq("id", id)
       .select(`
@@ -108,7 +112,7 @@ export function useTransactions() {
     const { error: deleteError } = await supabase
       .from("transactions")
       .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id);
+      .eq("id", id)
 
     if (deleteError) {
       throw new Error(deleteError.message);
@@ -146,13 +150,14 @@ export function useTransactions() {
     return groups;
   }, {} as Record<string, TransactionWithCategory[]>);
 
-  // Calculate totals
+  // Calculate totals. expenses is summed as a positive number so the page
+  // can render "-£X" without inverting the sign at display time.
   const totals = transactions.reduce(
     (acc, t) => {
-      if (t.is_income) {
+      if (t.amount >= 0) {
         acc.income += t.amount;
       } else {
-        acc.expenses += t.amount;
+        acc.expenses += Math.abs(t.amount);
       }
       return acc;
     },

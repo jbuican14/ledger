@@ -28,8 +28,16 @@ export function TransactionForm({
   onDelete,
   onClose,
 }: TransactionFormProps) {
-  const [isIncome, setIsIncome] = useState(initialData?.is_income ?? false);
-  const [amount, setAmount] = useState(initialData?.amount?.toString() ?? "");
+  // Derive income/expense from the signed amount on the existing record.
+  const [isIncome, setIsIncome] = useState(
+    initialData ? initialData.amount > 0 : false,
+  );
+  // Show absolute value in the input; the hook re-applies the sign on submit.
+  const [amount, setAmount] = useState(
+    initialData?.amount !== undefined
+      ? Math.abs(initialData.amount).toString()
+      : "",
+  );
   const [description, setDescription] = useState(
     initialData?.description ?? "",
   );
@@ -40,7 +48,9 @@ export function TransactionForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const filteredCategories = categories.filter((c) => c.is_income === isIncome);
+  const filteredCategories = categories.filter(
+    (c) => c.type === (isIncome ? "income" : "expense"),
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -39,7 +39,7 @@ export interface Database {
       profiles: {
         Row: {
           id: string;
-          household_id: string | null;
+          household_id: string;
           display_name: string | null;
           avatar_url: string | null;
           onboarding_completed: boolean;
@@ -48,7 +48,7 @@ export interface Database {
         };
         Insert: {
           id: string;
-          household_id?: string | null;
+          household_id: string;
           display_name?: string | null;
           avatar_url?: string | null;
           onboarding_completed?: boolean;
@@ -57,7 +57,7 @@ export interface Database {
         };
         Update: {
           id?: string;
-          household_id?: string | null;
+          household_id?: string;
           display_name?: string | null;
           avatar_url?: string | null;
           onboarding_completed?: boolean;
@@ -72,9 +72,10 @@ export interface Database {
           name: string;
           color: string;
           icon: string | null;
-          is_income: boolean;
+          type: "expense" | "income";
           sort_order: number;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -82,9 +83,10 @@ export interface Database {
           name: string;
           color?: string;
           icon?: string | null;
-          is_income?: boolean;
+          type?: "expense" | "income";
           sort_order?: number;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
           id?: string;
@@ -92,9 +94,10 @@ export interface Database {
           name?: string;
           color?: string;
           icon?: string | null;
-          is_income?: boolean;
+          type?: "expense" | "income";
           sort_order?: number;
           created_at?: string;
+          updated_at?: string;
         };
       };
       transactions: {
@@ -106,7 +109,6 @@ export interface Database {
           amount: number;
           description: string | null;
           transaction_date: string;
-          is_income: boolean;
           created_at: string;
           updated_at: string;
           deleted_at: string | null;
@@ -119,7 +121,6 @@ export interface Database {
           amount: number;
           description?: string | null;
           transaction_date?: string;
-          is_income?: boolean;
           created_at?: string;
           updated_at?: string;
           deleted_at?: string | null;
@@ -132,7 +133,6 @@ export interface Database {
           amount?: number;
           description?: string | null;
           transaction_date?: string;
-          is_income?: boolean;
           created_at?: string;
           updated_at?: string;
           deleted_at?: string | null;
