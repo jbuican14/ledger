@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useToast } from "@/components/ui/toast";
 import {
   LayoutDashboard,
   Receipt,
@@ -24,7 +25,15 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { profile, signOut } = useAuth();
+  const { showToast } = useToast();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/login");
+    showToast("You've been logged out", "success");
+  };
 
   return (
     <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-card border-r">
@@ -78,7 +87,7 @@ export function Sidebar() {
           variant="ghost"
           size="sm"
           className="w-full justify-start gap-3 text-muted-foreground"
-          onClick={() => signOut()}
+          onClick={handleSignOut}
         >
           <LogOut className="h-4 w-4" />
           Sign out

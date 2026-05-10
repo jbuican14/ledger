@@ -95,6 +95,8 @@ pnpm store prune  # Optional: clean pnpm cache
 ## Documentation
 
 - [Product Specification](./PRODUCT_SPEC.md) - Full product requirements and epic breakdown
+- [Epic Progress](./docs/EPIC_PROGRESS.md) - Current status of all epics
+- [Supabase Rules](./docs/SUPABASE_RULES.md) - Required patterns for Supabase integration
 
 ## License
 

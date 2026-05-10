@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({
@@ -70,17 +70,29 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Redirect to dashboard if accessing auth pages while logged in
-  if (isPublicRoute && user && pathname !== "/auth/callback") {
-    // Check onboarding status
-    console.log("Checking onboarding status for user:", user.id);
+  // Handle onboarding route specifically
+  if (pathname === "/onboarding" && user) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("onboarding_completed, household_id")
       .eq("id", user.id)
       .single();
 
-      console.log("Profile data:", profile);
+    // Already onboarded? Redirect to dashboard
+    if (profile?.onboarding_completed && profile?.household_id) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+  }
+
+  // Redirect to dashboard if accessing auth pages while logged in
+  if (isPublicRoute && user && pathname !== "/auth/callback") {
+    // Check onboarding status
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_completed, household_id")
+      .eq("id", user.id)
+      .single();
+
     if (profile?.onboarding_completed && profile?.household_id) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     } else if (pathname !== "/onboarding") {

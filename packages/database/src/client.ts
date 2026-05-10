@@ -1,23 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "./database.types";
-
-// Client-side Supabase client (browser)
-export function createBrowserClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-  return createClient<Database>(supabaseUrl, supabaseAnonKey);
-}
-
-// Server-side Supabase client
-export function createServerClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-  return createClient<Database>(supabaseUrl, supabaseServiceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-}
+// REMOVED: Supabase client creation should NOT exist in shared packages.
+// See docs/SUPABASE_RULES.md - clients only in apps/web/src/lib/supabase/
+// This file is kept empty to avoid import errors during transition.
+// TODO: Delete this file after confirming no imports remain.

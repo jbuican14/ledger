@@ -3,14 +3,17 @@
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/toast";
 
 export default function SettingsPage() {
   const { user, profile, household, signOut } = useAuth();
   const router = useRouter();
+  const { showToast } = useToast();
 
   const handleSignOut = async () => {
     await signOut();
     router.push("/login");
+    showToast("You've been logged out", "success");
   };
 
   return (

@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { Eye, EyeOff } from "lucide-react";
 
+const supabase = createClient();
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -16,7 +18,9 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(
-    searchParams.get("error") ? "Authentication failed. Please try again." : null
+    searchParams.get("error")
+      ? "Authentication failed. Please try again."
+      : null,
   );
   const [loading, setLoading] = useState(false);
 
@@ -26,7 +30,6 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -36,23 +39,9 @@ export function LoginForm() {
         setError(error.message);
         return;
       }
-
-      // Check onboarding status
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("onboarding_completed, household_id")
-          .eq("id", user.id)
-          .single();
-
-        if (profile?.onboarding_completed && profile?.household_id) {
-          router.push("/dashboard");
-        } else {
-          router.push("/onboarding");
-        }
-        router.refresh();
-      }
+      // Redirect to home - middleware will handle routing based on onboarding status
+      router.push("/");
+      router.refresh();
     } catch (err) {
       setError("An unexpected error occurred");
     } finally {
@@ -61,7 +50,6 @@ export function LoginForm() {
   };
 
   const handleGoogleLogin = async () => {
-    const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {

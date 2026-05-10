@@ -1,6 +1,15 @@
 "use client";
 
-// This file is kept for backwards compatibility but is deprecated.
-// Use `createBrowserClient` from "@ledger/database" instead.
+import { createBrowserClient } from "@supabase/ssr";
 
-export { createBrowserClient } from "@ledger/database";
+let client: ReturnType<typeof createBrowserClient> | undefined;
+
+export function createClient() {
+  if (!client) {
+    client = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+  }
+  return client;
+}

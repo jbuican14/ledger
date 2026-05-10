@@ -1,3 +1,2 @@
-// Re-export all database utilities
-export * from "./client";
+// Re-export database types only (no client logic per SUPABASE_RULES.md)
 export * from "./types";
