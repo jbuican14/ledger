@@ -46,13 +46,15 @@ function queryStub(result: DbResult) {
   const deleteEqFn = vi.fn().mockResolvedValue(result);
   const deleteFn = vi.fn().mockReturnValue({ eq: deleteEqFn });
 
-  const stub: Record<string, unknown> & PromiseLike<DbResult> = {
+  // Duck-typed thenable — `await` only needs a `.then` method, not a full
+  // PromiseLike implementation. Avoids the strict generic variance checks
+  // TypeScript enforces when the object is annotated as PromiseLike<T>.
+  const stub = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     insert: insertFn,
     delete: deleteFn,
-    // Make the builder itself awaitable — Supabase's real client works this way.
     then(
       onfulfilled?: ((v: DbResult) => unknown) | null,
       onrejected?: ((e: unknown) => unknown) | null,
