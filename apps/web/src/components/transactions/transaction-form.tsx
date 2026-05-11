@@ -12,6 +12,7 @@ import type {
   TransactionFormData,
 } from "@/types/database";
 import { Trash2 } from "lucide-react";
+import { CategoryIcon } from "@/components/categories/category-icon";
 
 interface TransactionFormProps {
   categories: Category[];
@@ -178,12 +179,10 @@ export function TransactionForm({
                   : "border-transparent hover:bg-muted",
               )}
             >
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                style={{ backgroundColor: category.color }}
-              >
-                {category.name.charAt(0)}
-              </div>
+              <CategoryIcon
+                name={category.icon}
+                color={category.color}
+              />
               <span className="text-xs truncate w-full text-center">
                 {category.name}
               </span>

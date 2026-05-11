@@ -3,6 +3,7 @@
 import { format, isToday, isYesterday, parseISO } from "date-fns";
 import type { TransactionWithCategory } from "@/types/database";
 import { cn } from "@/lib/utils";
+import { CategoryIcon } from "@/components/categories/category-icon";
 
 interface TransactionListProps {
   groupedTransactions: Record<string, TransactionWithCategory[]>;
@@ -58,15 +59,12 @@ export function TransactionList({
                 onClick={() => onSelect(transaction)}
                 className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left"
               >
-                {/* Category color dot */}
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium shrink-0"
-                  style={{
-                    backgroundColor: transaction.category?.color || "#6B7280",
-                  }}
-                >
-                  {transaction.category?.name?.charAt(0) || "?"}
-                </div>
+                <CategoryIcon
+                  name={transaction.category?.icon ?? null}
+                  color={transaction.category?.color || "#6B7280"}
+                  size={20}
+                  className="w-10 h-10"
+                />
 
                 {/* Description & category */}
                 <div className="flex-1 min-w-0">
