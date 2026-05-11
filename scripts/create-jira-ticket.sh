@@ -1,6 +1,6 @@
 #!/bin/bash
 # Create JIRA ticket script
-# Usage: ./create-jira-ticket.sh "Title" "Description" "Task|Epic|Subtask" [parent_key]
+# Usage: ./create-jira-ticket.sh "Title" "Description" "Task|Epic|Subtask|Bug" [parent_key]
 
 set -e
 
@@ -13,7 +13,7 @@ ISSUE_TYPE="${3:-Task}"
 PARENT_KEY="$4"
 
 if [ -z "$TITLE" ]; then
-    echo "Usage: ./create-jira-ticket.sh \"Title\" \"Description\" \"Task|Epic|Subtask\" [parent_key]"
+    echo "Usage: ./create-jira-ticket.sh \"Title\" \"Description\" \"Task|Epic|Subtask|Bug\" [parent_key]"
     exit 1
 fi
 
