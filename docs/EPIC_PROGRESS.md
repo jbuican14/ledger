@@ -10,10 +10,22 @@
 | 1 | Project Foundation | Done | Monorepo, Next.js, Supabase, RLS, CI |
 | 2 | Authentication | Done | Email/password, Google OAuth, password reset |
 | 3 | Navigation & Layout | Done | Sidebar, bottom tabs, theme toggle, FAB |
-| 4 | Category Management | Done | Default categories seeded via onboarding |
+| 4 | Category Management | Done | All Must stories (4.1, 4.3–4.6) shipped in KAN-23 |
 | 5 | Transaction Management | In Progress | Add/edit/delete working |
 | E | Empty States | Pending | |
 | P | Polish | Partial | Toast system added |
+
+### Epic 4 Details (All Must Done)
+
+| Story | Status | Notes |
+|-------|--------|-------|
+| 4.1 Default categories | ✅ | Seeded via `handle_new_user()` trigger on signup |
+| 4.3 Category list | ✅ | Settings page, grouped by expense/income |
+| 4.4 Add category | ✅ | Bottom sheet with name, type, color; auto-increments sort_order |
+| 4.5 Edit category | ✅ | Shipped with KAN-23 (was accidental, not separate ticket) |
+| 4.6 Delete category | ✅ | Inline confirmation; optimistic local removal |
+| 4.2 UK template | ⏳ | Should — deferred |
+| 4.7 Icon picker | ⏳ | Should — deferred |
 
 ### Epic 5 Remaining Items
 - [ ] 5.3 Expanded form ("More details" reveals date picker, description)

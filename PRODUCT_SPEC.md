@@ -411,15 +411,15 @@ CREATE TABLE budgets (
 
 ### Epic 4: Category Management
 
-| ID | Story | Priority | Complexity | Acceptance Criteria |
-|----|-------|----------|------------|---------------------|
-| 4.1 | Default categories | Must | Low | Seeded on household creation |
-| 4.2 | UK template | Should | Low | One-click applies UK-specific categories |
-| 4.3 | Category list (settings) | Must | Low | Grid/list of all categories |
-| 4.4 | Add category | Must | Medium | Name, color picker, icon picker, type (expense/income) |
-| 4.5 | Edit category | Must | Low | Update name, color, icon |
-| 4.6 | Delete category | Must | Medium | Confirmation; transactions are reassigned (FK is `ON DELETE SET NULL`, app prompts to reassign first) |
-| 4.7 | Icon picker | Should | Medium | Grid of common expense icons |
+| ID | Story | Priority | Complexity | Acceptance Criteria | Status |
+|----|-------|----------|------------|---------------------|--------|
+| 4.1 | Default categories | Must | Low | Seeded on household creation | ✅ KAN-23 |
+| 4.2 | UK template | Should | Low | One-click applies UK-specific categories | ⏳ |
+| 4.3 | Category list (settings) | Must | Low | Grid/list of all categories | ✅ KAN-23 |
+| 4.4 | Add category | Must | Medium | Name, color picker, icon picker, type (expense/income) | ✅ KAN-23 |
+| 4.5 | Edit category | Must | Low | Update name, color, icon | ✅ KAN-23 |
+| 4.6 | Delete category | Must | Medium | Confirmation; transactions are reassigned (FK is `ON DELETE SET NULL`, app prompts to reassign first) | ✅ KAN-23 |
+| 4.7 | Icon picker | Should | Medium | Grid of common expense icons | ⏳ |
 
 **Default Categories:**
 
