@@ -25,6 +25,7 @@ export default function TransactionsPage() {
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    undoDelete,
   } = useTransactions();
   const { categories } = useCategories();
 
@@ -60,11 +61,22 @@ export default function TransactionsPage() {
   };
 
   const handleDelete = async () => {
+    if (!selectedTransaction) return;
+    // Capture the id in the closure; selectedTransaction may change before
+    // the user clicks Undo (they could open another row).
+    const deletedId = selectedTransaction.id;
     try {
-      if (selectedTransaction) {
-        await deleteTransaction(selectedTransaction.id);
-        showToast("Transaction deleted", "success");
-      }
+      await deleteTransaction(deletedId);
+      showToast("Transaction deleted", "default", 5000, {
+        label: "Undo",
+        onClick: async () => {
+          try {
+            await undoDelete(deletedId);
+          } catch {
+            showToast("Failed to undo", "error");
+          }
+        },
+      });
     } catch (error) {
       showToast("Failed to delete transaction", "error");
       throw error;
