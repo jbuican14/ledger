@@ -1,0 +1,68 @@
+name: Jira branch automation
+
+# Transitions the matching Jira ticket when work begins on a KAN-* branch.
+# Layer 1 (GitHub for Jira app) handles the PR-merged -> Done transition;
+# this workflow handles the "I started working" half (-> In Progress).
+#
+# Trigger: branch creation. Fires once per branch, even if the branch sees
+# many subsequent pushes.
+
+on:
+  create:
+
+permissions:
+  contents: read
+
+jobs:
+  transition-to-in-progress:
+    if: github.event.ref_type == 'branch' && startsWith(github.event.ref, 'KAN-')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract Jira ticket key from branch name
+        id: extract
+        run: |
+          BRANCH="${{ github.event.ref }}"
+          TICKET=$(echo "$BRANCH" | grep -oE '^KAN-[0-9]+')
+          if [ -z "$TICKET" ]; then
+            echo "::warning::Branch '$BRANCH' starts with KAN- but no numeric suffix; skipping"
+            exit 0
+          fi
+          echo "Detected ticket: $TICKET"
+          echo "ticket=$TICKET" >> "$GITHUB_OUTPUT"
+
+      - name: Find 'In Progress' transition ID
+        id: transition
+        if: steps.extract.outputs.ticket != ''
+        env:
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_URL: ${{ secrets.JIRA_URL }}
+          TICKET: ${{ steps.extract.outputs.ticket }}
+        run: |
+          RESPONSE=$(curl -fsS \
+            -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+            -H "Accept: application/json" \
+            "https://$JIRA_URL/rest/api/3/issue/$TICKET/transitions")
+          ID=$(echo "$RESPONSE" | jq -r '.transitions[] | select(.name=="In Progress") | .id')
+          if [ -z "$ID" ] || [ "$ID" = "null" ]; then
+            echo "::warning::No 'In Progress' transition available for $TICKET — already past that state, skipping"
+            exit 0
+          fi
+          echo "Transition ID: $ID"
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+
+      - name: Transition ticket to 'In Progress'
+        if: steps.transition.outputs.id != ''
+        env:
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_URL: ${{ secrets.JIRA_URL }}
+          TICKET: ${{ steps.extract.outputs.ticket }}
+          TRANSITION_ID: ${{ steps.transition.outputs.id }}
+        run: |
+          curl -fsS -X POST \
+            -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"transition\":{\"id\":\"$TRANSITION_ID\"}}" \
+            "https://$JIRA_URL/rest/api/3/issue/$TICKET/transitions"
+          echo "✅ Transitioned $TICKET to In Progress"
