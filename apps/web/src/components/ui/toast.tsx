@@ -4,16 +4,27 @@ import { createContext, useContext, useState, useCallback } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface Toast {
   id: string;
   message: string;
   type?: "default" | "success" | "error";
   duration?: number;
+  action?: ToastAction;
 }
 
 interface ToastContextType {
   toasts: Toast[];
-  showToast: (message: string, type?: Toast["type"], duration?: number) => void;
+  showToast: (
+    message: string,
+    type?: Toast["type"],
+    duration?: number,
+    action?: ToastAction,
+  ) => void;
   dismissToast: (id: string) => void;
 }
 
@@ -27,9 +38,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const showToast = useCallback(
-    (message: string, type: Toast["type"] = "default", duration = 3000) => {
+    (
+      message: string,
+      type: Toast["type"] = "default",
+      duration = 3000,
+      action?: ToastAction,
+    ) => {
       const id = Math.random().toString(36).substring(2, 9);
-      const toast: Toast = { id, message, type, duration };
+      const toast: Toast = { id, message, type, duration, action };
 
       setToasts((prev) => [...prev, toast]);
 
@@ -79,10 +95,22 @@ function ToastContainer({
             toast.type === "default" && "bg-foreground text-background"
           )}
         >
-          <p className="text-sm font-medium">{toast.message}</p>
+          <p className="text-sm font-medium flex-1">{toast.message}</p>
+          {toast.action && (
+            <button
+              onClick={() => {
+                toast.action!.onClick();
+                onDismiss(toast.id);
+              }}
+              className="shrink-0 text-sm font-semibold uppercase tracking-wide opacity-90 hover:opacity-100 transition-opacity"
+            >
+              {toast.action.label}
+            </button>
+          )}
           <button
             onClick={() => onDismiss(toast.id)}
             className="shrink-0 opacity-70 hover:opacity-100 transition-opacity"
+            aria-label="Dismiss"
           >
             <X className="h-4 w-4" />
           </button>
