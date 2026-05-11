@@ -3,7 +3,7 @@ import type { Database } from "./database.types";
 export type { Database };
 
 // Re-export Supabase auth types (centralized here per SUPABASE_RULES.md)
-export type { User, Session } from "@supabase/supabase-js";
+export type { User, Session, EmailOtpType } from "@supabase/supabase-js";
 
 // Convenience types (will be populated after schema creation)
 export type Tables<T extends keyof Database["public"]["Tables"]> =
