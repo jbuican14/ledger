@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
+import { CategoryManagement } from "@/components/categories/category-management";
 
 export default function SettingsPage() {
   const { user, profile, household, signOut } = useAuth();
@@ -54,6 +55,11 @@ export default function SettingsPage() {
             ) : (
               <p className="text-muted-foreground text-sm">No household configured</p>
             )}
+          </div>
+
+          {/* Categories */}
+          <div className="bg-card border rounded-lg p-4">
+            <CategoryManagement />
           </div>
 
           {/* Danger Zone */}
