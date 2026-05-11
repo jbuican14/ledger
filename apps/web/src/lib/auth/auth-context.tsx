@@ -6,9 +6,15 @@ import { createClient } from "@/lib/supabase/client";
 import type { Profile, Household } from "@/types/database";
 
 // Extract types from the Supabase client
- type SupabaseClient = ReturnType<typeof createClient>;
- type AuthChangeEvent = Parameters<SupabaseClient['auth']['onAuthStateChange']>[0] extends (event: infer E, session: unknown) => void ? E : never;
- type Session = Awaited<ReturnType<SupabaseClient['auth']['getSession']>>['data']['session'];
+type SupabaseClient = ReturnType<typeof createClient>;
+type AuthChangeEvent = Parameters<
+  SupabaseClient["auth"]["onAuthStateChange"]
+>[0] extends (event: infer E, session: unknown) => void
+  ? E
+  : never;
+type Session = Awaited<
+  ReturnType<SupabaseClient["auth"]["getSession"]>
+>["data"]["session"];
 
 interface AuthContextType {
   user: User | null;
@@ -24,11 +30,23 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // ✅ Create ONE shared instance (correct)
 const supabase = createClient();
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [household, setHousehold] = useState<Household | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+interface AuthProviderProps {
+  children: React.ReactNode;
+  initialUser?: User | null;
+  initialProfile?: Profile | null;
+  initialHousehold?: Household | null;
+}
+
+export function AuthProvider({
+  children,
+  initialUser = null,
+  initialProfile = null,
+  initialHousehold = null,
+}: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(initialUser);
+  const [profile, setProfile] = useState<Profile | null>(initialProfile);
+  const [household, setHousehold] = useState<Household | null>(initialHousehold);
+  const [isLoading, setIsLoading] = useState(initialUser === null);
 
   const isFetching = useRef(false);
   const mounted = useRef(true);
@@ -77,49 +95,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     mounted.current = true;
 
-    const init = async () => {
-      try {
-        // 🔥 IMPORTANT: use getUser(), NOT getSession()
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+    // Skip client-side fetch when server already seeded state.
+    if (initialUser === null) {
+      const init = async () => {
+        try {
+          // 🔥 IMPORTANT: use getUser(), NOT getSession()
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
 
-        if (!mounted.current) return;
+          if (!mounted.current) return;
 
-        if (user) {
-          setUser(user);
-          await fetchProfile(user.id);
+          if (user) {
+            setUser(user);
+            await fetchProfile(user.id);
+          }
+        } catch (err) {
+          console.error("Init auth error:", err);
+        } finally {
+          if (mounted.current) setIsLoading(false);
         }
-      } catch (err) {
-        console.error("Init auth error:", err);
-      } finally {
-        if (mounted.current) setIsLoading(false);
-      }
-    };
+      };
 
-    init();
+      init();
+    }
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-      if (!mounted.current) return;
+    } = supabase.auth.onAuthStateChange(
+      async (event: AuthChangeEvent, session: Session | null) => {
+        if (!mounted.current) return;
 
-      if (event === "SIGNED_IN" && session?.user) {
-        setUser(session.user);
-        await fetchProfile(session.user.id);
-      }
+        if (event === "SIGNED_IN" && session?.user) {
+          setUser(session.user);
+          await fetchProfile(session.user.id);
+        }
 
-      if (event === "SIGNED_OUT") {
-        setUser(null);
-        setProfile(null);
-        setHousehold(null);
-      }
-    });
+        if (event === "SIGNED_OUT") {
+          setUser(null);
+          setProfile(null);
+          setHousehold(null);
+        }
+      },
+    );
 
     return () => {
       mounted.current = false;
       subscription.unsubscribe();
     };
+    // initialUser is a one-shot hydration seed; intentionally not reactive.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const signOut = async () => {
