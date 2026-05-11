@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
+import { computeTotals, toSignedAmount } from "@/lib/transactions/utils";
 import type { TransactionWithCategory, TransactionFormData } from "@/types/database";
 
 const supabase = createClient();
@@ -45,12 +46,6 @@ export function useTransactions() {
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
-
-  // Convert form input (positive amount + is_income flag) to a signed amount.
-  const toSignedAmount = (formData: TransactionFormData): number => {
-    const value = Math.abs(parseFloat(formData.amount));
-    return formData.is_income ? value : -value;
-  };
 
   const addTransaction = async (formData: TransactionFormData) => {
     if (!household?.id || !user?.id) {
@@ -150,19 +145,7 @@ export function useTransactions() {
     return groups;
   }, {} as Record<string, TransactionWithCategory[]>);
 
-  // Calculate totals. expenses is summed as a positive number so the page
-  // can render "-£X" without inverting the sign at display time.
-  const totals = transactions.reduce(
-    (acc, t) => {
-      if (t.amount >= 0) {
-        acc.income += t.amount;
-      } else {
-        acc.expenses += Math.abs(t.amount);
-      }
-      return acc;
-    },
-    { income: 0, expenses: 0 }
-  );
+  const totals = computeTotals(transactions);
 
   return {
     transactions,
