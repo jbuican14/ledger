@@ -7,8 +7,10 @@ import { useCategories } from "@/hooks/use-categories";
 import { usePaymentMethods } from "@/hooks/use-payment-methods";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useToast } from "@/components/ui/toast";
+import { useMonth } from "@/hooks/use-month";
 import { TransactionList } from "@/components/transactions/transaction-list";
 import { TransactionForm } from "@/components/transactions/transaction-form";
+import { MonthNavigator } from "@/components/transactions/month-navigator";
 import { TransactionListSkeleton } from "@/components/ui/skeleton";
 import {
   Sheet,
@@ -20,6 +22,7 @@ import type { TransactionWithCategory } from "@/types/database";
 
 export default function TransactionsPage() {
   const { household } = useAuth();
+  const { range } = useMonth();
   const {
     groupedTransactions,
     totals,
@@ -28,7 +31,7 @@ export default function TransactionsPage() {
     updateTransaction,
     deleteTransaction,
     undoDelete,
-  } = useTransactions();
+  } = useTransactions(range);
   const { categories } = useCategories();
   const { paymentMethods } = usePaymentMethods();
 
@@ -96,9 +99,14 @@ export default function TransactionsPage() {
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-4xl">
-        {/* Header with totals */}
-        <div className="flex items-center justify-between mb-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Transactions</h1>
+        </div>
+
+        {/* Month Navigator */}
+        <div className="mb-6">
+          <MonthNavigator />
         </div>
 
         {/* Summary Cards */}
