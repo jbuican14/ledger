@@ -41,6 +41,36 @@ export interface PaymentMethod {
   updated_at: string;
 }
 
+export type RecurringFrequency = "weekly" | "monthly" | "yearly";
+
+// amount is signed: negative = expense, positive = income (same as transactions)
+export interface RecurringTransaction {
+  id: string;
+  household_id: string;
+  category_id: string | null;
+  name: string;
+  amount: number;
+  frequency: RecurringFrequency;
+  next_due_date: string; // ISO date (YYYY-MM-DD)
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RecurringTransactionWithCategory extends RecurringTransaction {
+  category: Category | null;
+}
+
+// Form: amount is a string (always positive); the hook applies the sign
+// based on the is_income toggle, mirroring TransactionFormData.
+export interface RecurringTransactionFormData {
+  name: string;
+  amount: string;
+  category_id: string;
+  frequency: RecurringFrequency;
+  next_due_date: string;
+  is_income: boolean;
+}
+
 // amount is signed: negative = expense, positive = income
 export interface Transaction {
   id: string;
