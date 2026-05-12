@@ -455,7 +455,7 @@ CREATE TABLE budgets (
 | 5.6 | Edit transaction | Must | Medium | Click row → edit modal |
 | 5.7 | Soft delete with undo | Must | Medium | Delete sets `deleted_at`; toast offers Undo for 5 seconds |
 | 5.8 | Income/expense toggle | Must | Low | Switch between expense/income (flips amount sign + filters category list by type) |
-| 5.9 | Optimistic UI | Must | Medium | Show change immediately, sync background |
+| 5.9 | Optimistic UI | Deferred | Medium | Deferred to Epic 8 (Polish). Current pessimistic pattern is acceptable; revisit if specific actions feel sluggish. |
 
 **Transaction List Design:**
 ```

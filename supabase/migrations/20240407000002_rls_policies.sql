@@ -94,32 +94,33 @@ CREATE POLICY "Users can delete household categories"
 -- ============================================
 -- TRANSACTIONS POLICIES
 -- ============================================
-
--- Normal reads exclude soft-deleted rows. Undo restores via UPDATE (clears
--- deleted_at) using client-side state — no SELECT of deleted rows required.
+--
+-- SAFEGUARD: do NOT add `AND deleted_at IS NULL` to the SELECT policy here.
+-- We previously did, and it broke soft-delete in subtle ways. Root cause:
+-- PostgREST executes UPDATE-with-returning as
+--   `WITH t AS (UPDATE ... RETURNING ...) SELECT ... FROM t`
+-- The RETURNING phase applies the SELECT policy to the *new* row. After a
+-- soft-delete, the new row has deleted_at IS NOT NULL, so the SELECT policy
+-- filters it out and PostgreSQL raises 42501 "new row violates row-level
+-- security policy" — even though the UPDATE WITH CHECK itself passes. The
+-- error is misleading because it points at WITH CHECK, not at the SELECT
+-- policy that's actually causing the rejection.
+--
+-- The correct pattern: filter soft-deleted rows in the application layer
+-- (`.is("deleted_at", null)` in queries). RLS guards household isolation;
+-- soft-delete visibility is a UI concern.
 CREATE POLICY "Users can view household transactions"
     ON transactions FOR SELECT
-    USING (
-        household_id = get_user_household_id()
-        AND deleted_at IS NULL
-    );
+    USING (household_id = get_user_household_id());
 
 CREATE POLICY "Users can create household transactions"
     ON transactions FOR INSERT
     WITH CHECK (household_id = get_user_household_id());
 
--- WITH CHECK allows two cases:
---   1. Normal updates that keep household_id matching the user's household.
---   2. Soft-delete operations (deleted_at IS NOT NULL) which set deleted_at
---      and may temporarily fail the household check during the WITH CHECK
---      pass. Restore (undo) goes through case 1.
 CREATE POLICY "Users can update household transactions"
     ON transactions FOR UPDATE
     USING (household_id = get_user_household_id())
-    WITH CHECK (
-        household_id = get_user_household_id()
-        OR deleted_at IS NOT NULL
-    );
+    WITH CHECK (household_id = get_user_household_id());
 
 CREATE POLICY "Users can delete household transactions"
     ON transactions FOR DELETE
@@ -142,8 +143,8 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON transactions TO authenticated;
 COMMENT ON FUNCTION get_user_household_id() IS
     'Returns the household_id for the current authenticated user. SECURITY DEFINER + search_path pinned.';
 COMMENT ON POLICY "Users can view household transactions" ON transactions IS
-    'Excludes soft-deleted transactions from normal queries.';
+    'Household isolation only. App filters soft-deleted rows client-side. See policy block for why.';
 COMMENT ON POLICY "Users can update household transactions" ON transactions IS
-    'WITH CHECK allows soft-delete (deleted_at IS NOT NULL) to bypass the household match.';
+    'Users can update transactions in their household, including soft-delete and undo.';
 COMMENT ON POLICY "Users can create household if none exists" ON households IS
     'Defense-in-depth: signup trigger normally handles creation. Only allows authed users with no household to create one.';
