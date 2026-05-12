@@ -5,6 +5,7 @@ import { endOfMonth, format } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { computeTotals, toSignedAmount } from "@/lib/transactions/utils";
+import { invalidateMonthTotal } from "./use-month-total";
 import type {
   TransactionWithCategory,
   TransactionFormData,
@@ -31,6 +32,14 @@ function isInRange(date: string, range?: DateRange): boolean {
 function isFutureMonth(date: string): boolean {
   const todayEom = format(endOfMonth(new Date()), "yyyy-MM-dd");
   return date > todayEom;
+}
+
+// Extract { year, month } from a yyyy-MM-dd string. Cheaper than parsing into
+// a Date and respects the literal calendar month rather than a timezone-shifted
+// one. Used to invalidate adjacent-month preview caches after mutations.
+function monthOf(date: string): { year: number; month: number } {
+  const [y, m] = date.split("-");
+  return { year: Number(y), month: Number(m) };
 }
 
 export function useTransactions(range?: DateRange) {
@@ -132,6 +141,10 @@ export function useTransactions(range?: DateRange) {
     if (isInRange(data.transaction_date, activeRange)) {
       setTransactions((prev) => [data, ...prev]);
     }
+    // Bust the preview cache for the affected month so any visible navigator
+    // label re-fetches.
+    const newMonth = monthOf(data.transaction_date);
+    invalidateMonthTotal(household.id, newMonth.year, newMonth.month);
     return data;
   };
 
@@ -142,6 +155,10 @@ export function useTransactions(range?: DateRange) {
     if (isFutureMonth(formData.transaction_date)) {
       throw new Error(FUTURE_DATE_ERROR);
     }
+
+    // Capture the row's previous date before the update so we can invalidate
+    // the old month too if the user moved the transaction across months.
+    const previous = transactions.find((t) => t.id === id);
 
     const { data, error: updateError } = await supabase
       .from("transactions")
@@ -177,10 +194,21 @@ export function useTransactions(range?: DateRange) {
       // Date moved out of the active range — drop it from view.
       return prev.filter((t) => t.id !== id);
     });
+
+    if (household?.id) {
+      const newMonth = monthOf(data.transaction_date);
+      invalidateMonthTotal(household.id, newMonth.year, newMonth.month);
+      if (previous && previous.transaction_date !== data.transaction_date) {
+        const oldMonth = monthOf(previous.transaction_date);
+        invalidateMonthTotal(household.id, oldMonth.year, oldMonth.month);
+      }
+    }
     return data;
   };
 
   const deleteTransaction = async (id: string) => {
+    const previous = transactions.find((t) => t.id === id);
+
     // Soft delete
     const { error: deleteError } = await supabase
       .from("transactions")
@@ -192,6 +220,11 @@ export function useTransactions(range?: DateRange) {
     }
 
     setTransactions((prev) => prev.filter((t) => t.id !== id));
+
+    if (previous && household?.id) {
+      const m = monthOf(previous.transaction_date);
+      invalidateMonthTotal(household.id, m.year, m.month);
+    }
   };
 
   const undoDelete = async (id: string) => {
@@ -214,6 +247,10 @@ export function useTransactions(range?: DateRange) {
 
     if (isInRange(data.transaction_date, activeRange)) {
       setTransactions((prev) => [data, ...prev]);
+    }
+    if (household?.id) {
+      const m = monthOf(data.transaction_date);
+      invalidateMonthTotal(household.id, m.year, m.month);
     }
     return data;
   };
