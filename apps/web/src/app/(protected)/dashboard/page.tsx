@@ -4,15 +4,25 @@ import Link from "next/link";
 import { Wallet } from "lucide-react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useTransactions } from "@/hooks/use-transactions";
+import { useMonth } from "@/hooks/use-month";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCardSkeleton } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
   const { user, profile, household } = useAuth();
-  const { transactions, isLoading } = useTransactions();
+  // Dashboard always reflects the same month range as the transactions page,
+  // so "This Month" stays in sync with the user's currently-selected month.
+  const { range } = useMonth();
+  const { transactions, totals, isLoading } = useTransactions(range);
 
   const isEmpty = !isLoading && transactions.length === 0;
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: household?.currency || "GBP",
+    }).format(amount);
 
   if (isLoading) {
     return (
@@ -58,7 +68,9 @@ export default function DashboardPage() {
           {/* Quick Stats */}
           <div className="bg-card border rounded-lg p-4">
             <p className="text-sm text-muted-foreground">This Month</p>
-            <p className="text-2xl font-bold">£0.00</p>
+            <p className="text-2xl font-bold">
+              {formatCurrency(totals.expenses)}
+            </p>
             <p className="text-xs text-muted-foreground mt-1">Total spent</p>
           </div>
 
