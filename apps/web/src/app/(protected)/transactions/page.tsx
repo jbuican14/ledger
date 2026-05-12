@@ -11,6 +11,7 @@ import { useMonth } from "@/hooks/use-month";
 import { TransactionList } from "@/components/transactions/transaction-list";
 import { TransactionForm } from "@/components/transactions/transaction-form";
 import { MonthNavigator } from "@/components/transactions/month-navigator";
+import { DownloadMenu } from "@/components/transactions/download-menu";
 import {
   TransactionListSkeleton,
   StatCardSkeleton,
@@ -25,8 +26,9 @@ import type { TransactionWithCategory } from "@/types/database";
 
 export default function TransactionsPage() {
   const { household } = useAuth();
-  const { range } = useMonth();
+  const { year, month, range } = useMonth();
   const {
+    transactions,
     groupedTransactions,
     totals,
     isLoading,
@@ -105,6 +107,11 @@ export default function TransactionsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Transactions</h1>
+          <DownloadMenu
+            transactions={transactions}
+            year={year}
+            month={month}
+          />
         </div>
 
         {/* Month Navigator */}
