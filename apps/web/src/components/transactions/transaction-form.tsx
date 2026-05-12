@@ -13,6 +13,8 @@ import type {
 } from "@/types/database";
 import { Trash2 } from "lucide-react";
 import { CategoryIcon } from "@/components/categories/category-icon";
+import { getCurrencySymbol } from "@/lib/currency";
+import { useAuth } from "@/lib/auth/auth-context";
 
 interface TransactionFormProps {
   categories: Category[];
@@ -29,6 +31,9 @@ export function TransactionForm({
   onDelete,
   onClose,
 }: TransactionFormProps) {
+  const { household } = useAuth();
+  const currencySymbol = getCurrencySymbol(household?.currency ?? "GBP");
+
   // Derive income/expense from the signed amount on the existing record.
   const [isIncome, setIsIncome] = useState(
     initialData ? initialData.amount > 0 : false,
@@ -108,7 +113,7 @@ export function TransactionForm({
             "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors",
             !isIncome
               ? "bg-background shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
+              : "text-muted-foreground hover:text-foreground ",
           )}
         >
           Expense
@@ -122,7 +127,7 @@ export function TransactionForm({
           className={cn(
             "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors",
             isIncome
-              ? "bg-background shadow-sm"
+              ? "bg-background"
               : "text-muted-foreground hover:text-foreground",
           )}
         >
@@ -135,7 +140,7 @@ export function TransactionForm({
         <Label htmlFor="amount">Amount</Label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-            £
+            {currencySymbol}
           </span>
           <Input
             id="amount"
@@ -166,29 +171,32 @@ export function TransactionForm({
       {/* Category */}
       <div className="space-y-2">
         <Label>Category</Label>
-        <div className="grid grid-cols-4 gap-2">
-          {filteredCategories?.map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              onClick={() => setCategoryId(category.id)}
-              className={cn(
-                "flex flex-col items-center gap-1 p-2 rounded-lg border transition-colors",
-                categoryId === category.id
-                  ? "border-primary bg-primary/10"
-                  : "border-transparent hover:bg-muted",
-              )}
-            >
-              <CategoryIcon
-                name={category.icon}
-                color={category.color}
-              />
-              <span className="text-xs truncate w-full text-center">
-                {category.name}
-              </span>
-            </button>
-          ))}
-        </div>
+        {filteredCategories && filteredCategories.length > 0 ? (
+          <div className="grid grid-cols-4 gap-2">
+            {filteredCategories.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => setCategoryId(category.id)}
+                className={cn(
+                  "flex flex-col items-center gap-1 p-2 rounded-lg border transition-colors",
+                  categoryId === category.id
+                    ? "border-primary bg-primary/10"
+                    : "border-transparent hover:bg-muted",
+                )}
+              >
+                <CategoryIcon name={category.icon} color={category.color} />
+                <span className="text-xs truncate w-full text-center">
+                  {category.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No categories available. Go to Settings to create one.
+          </p>
+        )}
       </div>
 
       {/* Date */}
