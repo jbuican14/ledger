@@ -5,6 +5,10 @@ import { addMonths, format } from "date-fns";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMonth } from "@/hooks/use-month";
+import { useMonthTotal } from "@/hooks/use-month-total";
+import { useAuth } from "@/lib/auth/auth-context";
+import { formatCompactCurrency } from "@/lib/currency";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MonthYearPicker } from "./month-year-picker";
 
 type AnchorPill = {
@@ -50,6 +54,8 @@ export function MonthNavigator() {
 
   return (
     <>
+      {/* items-start so each anchor pill's column is free to grow downward
+          with its preview label, without stretching the right pill vertically. */}
       <div className="flex items-start gap-2">
         {leftPills.map((pill) => {
           const isSelected = pill.year === year && pill.month === month;
@@ -63,13 +69,18 @@ export function MonthNavigator() {
                 type="button"
                 onClick={() => goTo(pill.year, pill.month)}
                 aria-pressed={isSelected}
-                className={cn(pillBase, "w-full flex-col gap-1", pillState(isSelected))}
+                className={cn(
+                  pillBase,
+                  "w-full flex-col gap-1",
+                  pillState(isSelected),
+                )}
               >
                 <span className="leading-snug">{format(date, "MMM")}</span>
                 <span className="text-[10px] font-normal opacity-60 leading-tight">
                   {pill.year}
                 </span>
               </button>
+              <MonthTotalLabel year={pill.year} month={pill.month} />
             </div>
           );
         })}
@@ -101,6 +112,32 @@ export function MonthNavigator() {
         onSelect={(y, m) => goTo(y, m)}
       />
     </>
+  );
+}
+
+/**
+ * Tiny expense-total label rendered under each anchor pill — peripheral
+ * context so the user can compare "did I spend more last month?" without
+ * navigating. Loading state shows a thin skeleton so the layout doesn't
+ * jump when totals resolve.
+ */
+function MonthTotalLabel({ year, month }: { year: number; month: number }) {
+  const { household } = useAuth();
+  const { expenses, isLoading } = useMonthTotal(year, month);
+
+  if (isLoading) {
+    return <Skeleton className="h-3 w-10 mx-auto rounded" />;
+  }
+  if (expenses == null) {
+    return <span className="h-3" aria-hidden />;
+  }
+  return (
+    <span
+      className="text-[10px] text-muted-foreground text-center leading-tight tabular-nums"
+      aria-label={`${expenses} spent`}
+    >
+      {formatCompactCurrency(expenses, household?.currency ?? "GBP")}
+    </span>
   );
 }
 
