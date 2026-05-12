@@ -1,9 +1,37 @@
 "use client";
 
+import Link from "next/link";
+import { Wallet } from "lucide-react";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useTransactions } from "@/hooks/use-transactions";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function DashboardPage() {
   const { user, profile, household } = useAuth();
+  const { transactions, isLoading } = useTransactions();
+
+  const isEmpty = !isLoading && transactions.length === 0;
+
+  if (isEmpty) {
+    return (
+      <div className="p-4 lg:p-6">
+        <div className="max-w-4xl">
+          <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+          <EmptyState
+            icon={Wallet}
+            title={`Welcome${profile?.display_name ? `, ${profile.display_name}` : ""}!`}
+            description="Start tracking your spending by adding your first expense. We'll help you see where your money goes each month."
+            action={
+              <Button asChild>
+                <Link href="/transactions">Add your first expense</Link>
+              </Button>
+            }
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 lg:p-6">
@@ -64,16 +92,6 @@ export default function DashboardPage() {
               <p className="text-muted-foreground text-sm">No household set up yet</p>
             )}
           </div>
-        </div>
-
-        {/* Getting Started */}
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mt-6">
-          <h3 className="font-semibold mb-2">Getting Started</h3>
-          <ul className="text-sm text-muted-foreground space-y-1">
-            <li>1. Add your first transaction using the + button</li>
-            <li>2. Set up your monthly budget in Settings</li>
-            <li>3. Create savings goals to track your progress</li>
-          </ul>
         </div>
       </div>
     </div>

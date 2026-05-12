@@ -1,9 +1,11 @@
 "use client";
 
 import { format, isToday, isYesterday, parseISO } from "date-fns";
+import { Receipt } from "lucide-react";
 import type { TransactionWithCategory } from "@/types/database";
 import { cn } from "@/lib/utils";
 import { CategoryIcon } from "@/components/categories/category-icon";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface TransactionListProps {
   groupedTransactions: Record<string, TransactionWithCategory[]>;
@@ -36,12 +38,11 @@ export function TransactionList({
 
   if (dates.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">No transactions yet</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          Tap the + button to add your first one
-        </p>
-      </div>
+      <EmptyState
+        icon={Receipt}
+        title="No transactions yet"
+        description="Start tracking your spending by adding your first expense. Tap the + button to get started."
+      />
     );
   }
 

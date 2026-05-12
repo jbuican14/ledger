@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { CategoryIcon } from "@/components/categories/category-icon";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useCategories } from "@/hooks/use-categories";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
@@ -86,22 +87,41 @@ export function CategoryManagement() {
         </Button>
       </div>
 
-      <div className="space-y-4">
-        <CategoryGroup
-          title="Expense"
-          categories={expenseCategories}
-          confirmDeleteId={confirmDeleteId}
-          onDelete={handleDelete}
-          onCancelDelete={() => setConfirmDeleteId(null)}
+      {expenseCategories.length === 0 && incomeCategories.length === 0 ? (
+        <EmptyState
+          icon={Tag}
+          title="No categories yet"
+          description="Add a category to start organising your transactions."
+          action={
+            <Button
+              onClick={() => {
+                resetForm();
+                setSheetOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add category
+            </Button>
+          }
         />
-        <CategoryGroup
-          title="Income"
-          categories={incomeCategories}
-          confirmDeleteId={confirmDeleteId}
-          onDelete={handleDelete}
-          onCancelDelete={() => setConfirmDeleteId(null)}
-        />
-      </div>
+      ) : (
+        <div className="space-y-4">
+          <CategoryGroup
+            title="Expense"
+            categories={expenseCategories}
+            confirmDeleteId={confirmDeleteId}
+            onDelete={handleDelete}
+            onCancelDelete={() => setConfirmDeleteId(null)}
+          />
+          <CategoryGroup
+            title="Income"
+            categories={incomeCategories}
+            confirmDeleteId={confirmDeleteId}
+            onDelete={handleDelete}
+            onCancelDelete={() => setConfirmDeleteId(null)}
+          />
+        </div>
+      )}
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="bottom" className="pb-safe">
