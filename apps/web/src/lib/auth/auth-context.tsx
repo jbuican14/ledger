@@ -50,6 +50,11 @@ export function AuthProvider({
 
   const isFetching = useRef(false);
   const mounted = useRef(true);
+  // Tracks the last user id we've already loaded a profile for. Supabase fires
+  // a spurious SIGNED_IN on mount when the server already seeded our session;
+  // refetching there races other hooks for the auth lock and triggers the
+  // "Lock was released because another request stole it" error.
+  const lastFetchedUserId = useRef<string | null>(initialUser?.id ?? null);
 
   const fetchProfile = async (userId: string) => {
     if (isFetching.current) return;
@@ -107,6 +112,7 @@ export function AuthProvider({
           if (!mounted.current) return;
 
           if (user) {
+            lastFetchedUserId.current = user.id;
             setUser(user);
             await fetchProfile(user.id);
           }
@@ -127,11 +133,17 @@ export function AuthProvider({
         if (!mounted.current) return;
 
         if (event === "SIGNED_IN" && session?.user) {
+          // Skip the spurious SIGNED_IN fired on mount when SSR already seeded
+          // the same user — refetching here races other hooks for the auth
+          // lock and breaks them.
+          if (session.user.id === lastFetchedUserId.current) return;
+          lastFetchedUserId.current = session.user.id;
           setUser(session.user);
           await fetchProfile(session.user.id);
         }
 
         if (event === "SIGNED_OUT") {
+          lastFetchedUserId.current = null;
           setUser(null);
           setProfile(null);
           setHousehold(null);
