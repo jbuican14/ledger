@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FAB } from "@/components/layout";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useCategories } from "@/hooks/use-categories";
+import { usePaymentMethods } from "@/hooks/use-payment-methods";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useToast } from "@/components/ui/toast";
 import { TransactionList } from "@/components/transactions/transaction-list";
@@ -28,6 +29,7 @@ export default function TransactionsPage() {
     undoDelete,
   } = useTransactions();
   const { categories } = useCategories();
+  const { paymentMethods } = usePaymentMethods();
 
   const { showToast } = useToast();
 
@@ -141,6 +143,7 @@ export default function TransactionsPage() {
           </SheetHeader>
           <TransactionForm
             categories={categories}
+            paymentMethods={paymentMethods}
             initialData={selectedTransaction}
             onSubmit={handleSubmit}
             onDelete={selectedTransaction ? handleDelete : undefined}

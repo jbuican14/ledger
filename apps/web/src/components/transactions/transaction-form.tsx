@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type {
   Category,
+  PaymentMethod,
   TransactionWithCategory,
   TransactionFormData,
 } from "@/types/database";
@@ -18,6 +19,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 
 interface TransactionFormProps {
   categories: Category[];
+  paymentMethods: PaymentMethod[];
   initialData?: TransactionWithCategory | null;
   onSubmit: (data: TransactionFormData) => Promise<void>;
   onDelete?: () => Promise<void>;
@@ -26,6 +28,7 @@ interface TransactionFormProps {
 
 export function TransactionForm({
   categories,
+  paymentMethods,
   initialData,
   onSubmit,
   onDelete,
@@ -48,11 +51,17 @@ export function TransactionForm({
     initialData?.description ?? "",
   );
   const [categoryId, setCategoryId] = useState(initialData?.category_id ?? "");
+  const [paymentMethodId, setPaymentMethodId] = useState(
+    initialData?.payment_method_id ?? "",
+  );
   const [date, setDate] = useState(
     initialData?.transaction_date ?? format(new Date(), "yyyy-MM-dd"),
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // When true, successful submit clears the form but keeps the Sheet open
+  // for rapid bulk entry. Only relevant on the Add form (not Edit).
+  const [addAnother, setAddAnother] = useState(false);
 
   const filteredCategories = categories.filter(
     (c) => c.type === (isIncome ? "income" : "expense"),
@@ -74,10 +83,20 @@ export function TransactionForm({
         amount,
         description,
         category_id: categoryId,
+        payment_method_id: paymentMethodId,
         transaction_date: date,
         is_income: isIncome,
       });
-      onClose();
+      if (addAnother && !initialData) {
+        // Bulk-entry mode: clear input fields but keep date + type so the
+        // user can keep adding similar transactions.
+        setAmount("");
+        setDescription("");
+        setCategoryId("");
+        setPaymentMethodId("");
+      } else {
+        onClose();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save");
     } finally {
@@ -123,6 +142,8 @@ export function TransactionForm({
           onClick={() => {
             setIsIncome(true);
             setCategoryId("");
+            // Payment method is expense-only; drop it when switching to income.
+            setPaymentMethodId("");
           }}
           className={cn(
             "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors",
@@ -199,6 +220,38 @@ export function TransactionForm({
         )}
       </div>
 
+      {/* Payment method — expense only */}
+      {!isIncome && (
+        <div className="space-y-2">
+          <Label>Payment method (optional)</Label>
+          {paymentMethods.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {paymentMethods.map((pm) => (
+                <button
+                  key={pm.id}
+                  type="button"
+                  onClick={() =>
+                    setPaymentMethodId(paymentMethodId === pm.id ? "" : pm.id)
+                  }
+                  className={cn(
+                    "px-3 py-1.5 rounded-full border text-sm transition-colors",
+                    paymentMethodId === pm.id
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-input text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {pm.name}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No payment methods yet. Add some in Settings.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Date */}
       <div className="space-y-2">
         <Label htmlFor="date">Date</Label>
@@ -209,6 +262,19 @@ export function TransactionForm({
           onChange={(e) => setDate(e.target.value)}
         />
       </div>
+
+      {/* Add another — only on Add form, not Edit */}
+      {!initialData && (
+        <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={addAnother}
+            onChange={(e) => setAddAnother(e.target.checked)}
+            className="h-4 w-4 rounded border-input text-primary focus:ring-2 focus:ring-ring"
+          />
+          <span>Add another after saving</span>
+        </label>
+      )}
 
       {/* Error */}
       {error && (

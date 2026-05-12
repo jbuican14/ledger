@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { CategoryManagement } from "@/components/categories/category-management";
+import { PaymentMethodManagement } from "@/components/payment-methods/payment-method-management";
 
 export default function SettingsPage() {
   const { user, profile, household, signOut } = useAuth();
@@ -60,6 +61,11 @@ export default function SettingsPage() {
           {/* Categories */}
           <div className="bg-card border rounded-lg p-4">
             <CategoryManagement />
+          </div>
+
+          {/* Payment Methods */}
+          <div className="bg-card border rounded-lg p-4">
+            <PaymentMethodManagement />
           </div>
 
           {/* Danger Zone */}

@@ -27,7 +27,8 @@ export function useTransactions() {
       .from("transactions")
       .select(`
         *,
-        category:categories(*)
+        category:categories(*),
+        payment_method:payment_methods(*)
       `)
       .eq("household_id", household.id)
       .is("deleted_at", null)
@@ -58,13 +59,16 @@ export function useTransactions() {
         household_id: household.id,
         user_id: user.id,
         category_id: formData.category_id || null,
+        // Payment method is expense-only — drop it for income even if the form happens to carry one.
+        payment_method_id: formData.is_income ? null : formData.payment_method_id || null,
         amount: toSignedAmount(formData),
         description: formData.description || null,
         transaction_date: formData.transaction_date,
       })
       .select(`
         *,
-        category:categories(*)
+        category:categories(*),
+        payment_method:payment_methods(*)
       `)
       .single();
 
@@ -81,6 +85,7 @@ export function useTransactions() {
       .from("transactions")
       .update({
         category_id: formData.category_id || null,
+        payment_method_id: formData.is_income ? null : formData.payment_method_id || null,
         amount: toSignedAmount(formData),
         description: formData.description || null,
         transaction_date: formData.transaction_date,
@@ -88,7 +93,8 @@ export function useTransactions() {
       .eq("id", id)
       .select(`
         *,
-        category:categories(*)
+        category:categories(*),
+        payment_method:payment_methods(*)
       `)
       .single();
 
@@ -123,7 +129,8 @@ export function useTransactions() {
       .eq("id", id)
       .select(`
         *,
-        category:categories(*)
+        category:categories(*),
+        payment_method:payment_methods(*)
       `)
       .single();
 

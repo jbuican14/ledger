@@ -32,12 +32,22 @@ export interface Category {
   updated_at: string;
 }
 
+export interface PaymentMethod {
+  id: string;
+  household_id: string;
+  name: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // amount is signed: negative = expense, positive = income
 export interface Transaction {
   id: string;
   household_id: string;
   user_id: string | null;
   category_id: string | null;
+  payment_method_id: string | null;
   amount: number;
   description: string | null;
   transaction_date: string;
@@ -49,6 +59,7 @@ export interface Transaction {
 // Extended types with relations
 export interface TransactionWithCategory extends Transaction {
   category: Category | null;
+  payment_method: PaymentMethod | null;
 }
 
 // Form types — `amount` is a string from the input (always positive); the
@@ -57,6 +68,7 @@ export interface TransactionFormData {
   amount: string;
   description: string;
   category_id: string;
+  payment_method_id: string;
   transaction_date: string;
   is_income: boolean;
 }

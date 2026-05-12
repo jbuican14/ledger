@@ -7,6 +7,7 @@ function formData(overrides: Partial<TransactionFormData>): TransactionFormData 
     amount: "0",
     description: "",
     category_id: "",
+    payment_method_id: "",
     transaction_date: "2026-05-11",
     is_income: false,
     ...overrides,
