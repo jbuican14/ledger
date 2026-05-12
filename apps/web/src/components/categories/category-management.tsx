@@ -16,6 +16,7 @@ import { CategoryIcon } from "@/components/categories/category-icon";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCategories } from "@/hooks/use-categories";
 import { useToast } from "@/components/ui/toast";
+import { ListItemSkeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { CategoryType } from "@/types/database";
 
@@ -26,12 +27,19 @@ const PRESET_COLORS = [
 ];
 
 export function CategoryManagement() {
-  const { expenseCategories, incomeCategories, addCategory, deleteCategory } =
-    useCategories();
+  const {
+    expenseCategories,
+    incomeCategories,
+    addCategory,
+    deleteCategory,
+    isLoading,
+    error: fetchError,
+  } = useCategories();
   const { showToast } = useToast();
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [name, setName] = useState("");
+  const [nameError, setNameError] = useState<string | null>(null);
   const [type, setType] = useState<CategoryType>("expense");
   const [color, setColor] = useState<string>(PRESET_COLORS[0] ?? "#22C55E");
   const [isSaving, setIsSaving] = useState(false);
@@ -39,12 +47,17 @@ export function CategoryManagement() {
 
   const resetForm = () => {
     setName("");
+    setNameError(null);
     setType("expense");
     setColor(PRESET_COLORS[0] ?? "#22C55E");
   };
 
   const handleAdd = async () => {
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setNameError("Name is required");
+      return;
+    }
+    setNameError(null);
     setIsSaving(true);
     const { error } = await addCategory({ name, type, color });
     setIsSaving(false);
@@ -87,7 +100,20 @@ export function CategoryManagement() {
         </Button>
       </div>
 
-      {expenseCategories.length === 0 && incomeCategories.length === 0 ? (
+      {isLoading ? (
+        <div className="space-y-1">
+          <ListItemSkeleton />
+          <ListItemSkeleton />
+          <ListItemSkeleton />
+        </div>
+      ) : fetchError ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
+          <p className="text-destructive font-medium mb-1">
+            Couldn&apos;t load categories
+          </p>
+          <p className="text-muted-foreground">{fetchError}</p>
+        </div>
+      ) : expenseCategories.length === 0 && incomeCategories.length === 0 ? (
         <EmptyState
           icon={Tag}
           title="No categories yet"
@@ -139,10 +165,23 @@ export function CategoryManagement() {
                 id="cat-name"
                 placeholder="e.g. Gym"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (nameError) setNameError(null);
+                }}
+                onBlur={() => {
+                  if (!name.trim()) setNameError("Name is required");
+                }}
                 onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                aria-invalid={!!nameError}
+                aria-describedby={nameError ? "cat-name-error" : undefined}
                 autoFocus
               />
+              {nameError && (
+                <p id="cat-name-error" className="text-sm text-destructive">
+                  {nameError}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">

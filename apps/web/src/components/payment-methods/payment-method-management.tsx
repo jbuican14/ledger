@@ -14,21 +14,35 @@ import {
 } from "@/components/ui/sheet";
 import { usePaymentMethods } from "@/hooks/use-payment-methods";
 import { useToast } from "@/components/ui/toast";
+import { ListItemSkeleton } from "@/components/ui/skeleton";
 
 export function PaymentMethodManagement() {
-  const { paymentMethods, addPaymentMethod, deletePaymentMethod } =
-    usePaymentMethods();
+  const {
+    paymentMethods,
+    addPaymentMethod,
+    deletePaymentMethod,
+    isLoading,
+    error: fetchError,
+  } = usePaymentMethods();
   const { showToast } = useToast();
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [name, setName] = useState("");
+  const [nameError, setNameError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const resetForm = () => setName("");
+  const resetForm = () => {
+    setName("");
+    setNameError(null);
+  };
 
   const handleAdd = async () => {
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setNameError("Name is required");
+      return;
+    }
+    setNameError(null);
     setIsSaving(true);
     const { error } = await addPaymentMethod({ name });
     setIsSaving(false);
@@ -71,7 +85,19 @@ export function PaymentMethodManagement() {
         </Button>
       </div>
 
-      {paymentMethods.length === 0 ? (
+      {isLoading ? (
+        <div className="space-y-1">
+          <ListItemSkeleton />
+          <ListItemSkeleton />
+        </div>
+      ) : fetchError ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
+          <p className="text-destructive font-medium mb-1">
+            Couldn&apos;t load payment methods
+          </p>
+          <p className="text-muted-foreground">{fetchError}</p>
+        </div>
+      ) : paymentMethods.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           No payment methods yet.
         </p>
@@ -132,10 +158,23 @@ export function PaymentMethodManagement() {
                 id="pm-name"
                 placeholder="e.g. Credit Card 1"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (nameError) setNameError(null);
+                }}
+                onBlur={() => {
+                  if (!name.trim()) setNameError("Name is required");
+                }}
                 onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                aria-invalid={!!nameError}
+                aria-describedby={nameError ? "pm-name-error" : undefined}
                 autoFocus
               />
+              {nameError && (
+                <p id="pm-name-error" className="text-sm text-destructive">
+                  {nameError}
+                </p>
+              )}
             </div>
 
             <Button

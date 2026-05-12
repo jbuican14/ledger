@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { useToast } from "@/components/ui/toast";
 import { TransactionList } from "@/components/transactions/transaction-list";
 import { TransactionForm } from "@/components/transactions/transaction-form";
+import { TransactionListSkeleton } from "@/components/ui/skeleton";
 import {
   Sheet,
   SheetContent,
@@ -118,9 +119,7 @@ export default function TransactionsPage() {
 
         {/* Transaction List */}
         {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground animate-pulse">Loading...</p>
-          </div>
+          <TransactionListSkeleton />
         ) : (
           <TransactionList
             groupedTransactions={groupedTransactions}

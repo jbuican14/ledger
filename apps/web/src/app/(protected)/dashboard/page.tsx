@@ -6,12 +6,28 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { useTransactions } from "@/hooks/use-transactions";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { StatCardSkeleton } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
   const { user, profile, household } = useAuth();
   const { transactions, isLoading } = useTransactions();
 
   const isEmpty = !isLoading && transactions.length === 0;
+
+  if (isLoading) {
+    return (
+      <div className="p-4 lg:p-6">
+        <div className="max-w-4xl">
+          <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isEmpty) {
     return (
