@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { endOfMonth, format } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { computeTotals, toSignedAmount } from "@/lib/transactions/utils";
@@ -11,6 +12,9 @@ import type {
 
 const supabase = createClient();
 
+export const FUTURE_DATE_ERROR =
+  "Future months are managed by Recurring (coming soon)";
+
 export type DateRange = {
   from: string;
   to: string;
@@ -19,6 +23,14 @@ export type DateRange = {
 function isInRange(date: string, range?: DateRange): boolean {
   if (!range) return true;
   return date >= range.from && date <= range.to;
+}
+
+// Defense-in-depth: even if the form somehow lets a future-month date through,
+// the data layer rejects it before hitting Supabase. Comparison is lexicographic
+// on yyyy-MM-dd, which is correct because both sides are zero-padded ISO dates.
+function isFutureMonth(date: string): boolean {
+  const todayEom = format(endOfMonth(new Date()), "yyyy-MM-dd");
+  return date > todayEom;
 }
 
 export function useTransactions(range?: DateRange) {
@@ -84,6 +96,10 @@ export function useTransactions(range?: DateRange) {
       throw new Error("No household or user");
     }
 
+    if (isFutureMonth(formData.transaction_date)) {
+      throw new Error(FUTURE_DATE_ERROR);
+    }
+
     const { data, error: insertError } = await supabase
       .from("transactions")
       .insert({
@@ -123,6 +139,10 @@ export function useTransactions(range?: DateRange) {
     id: string,
     formData: TransactionFormData,
   ) => {
+    if (isFutureMonth(formData.transaction_date)) {
+      throw new Error(FUTURE_DATE_ERROR);
+    }
+
     const { data, error: updateError } = await supabase
       .from("transactions")
       .update({

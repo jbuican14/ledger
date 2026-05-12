@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
+import { format, endOfMonth, addDays, addMonths } from "date-fns";
 import { useTransactions } from "./use-transactions";
 import type { TransactionWithCategory } from "@/types/database";
 
@@ -138,6 +139,132 @@ describe("useTransactions — range filtering", () => {
 
     rerender({ from: "2026-04-01", to: "2026-04-30" });
     await waitFor(() => expect(mockFrom).toHaveBeenCalledTimes(2));
+  });
+});
+
+describe("useTransactions — future-month rejection (KAN-35)", () => {
+  // Anchor everything to the user's local "end of current month" so the test
+  // file stays valid as time passes. +1 day is always next month, +12 months
+  // is always next year.
+  const todayEom = endOfMonth(new Date());
+  const lastDayOfMonth = format(todayEom, "yyyy-MM-dd");
+  const nextMonthDay = format(addDays(todayEom, 1), "yyyy-MM-dd");
+  const nextYearDay = format(addMonths(todayEom, 12), "yyyy-MM-dd");
+  const FUTURE_MSG = "Future months are managed by Recurring (coming soon)";
+
+  it("addTransaction rejects when transaction_date is next month", async () => {
+    const { stub, insertFn } = queryStub({ data: [], error: null });
+    mockFrom.mockReturnValue(stub);
+
+    const { result } = renderHook(() => useTransactions());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await expect(
+      result.current.addTransaction({
+        amount: "10",
+        description: "",
+        category_id: "",
+        payment_method_id: "",
+        transaction_date: nextMonthDay,
+        is_income: false,
+      }),
+    ).rejects.toThrow(FUTURE_MSG);
+
+    expect(insertFn).not.toHaveBeenCalled();
+  });
+
+  it("addTransaction rejects when transaction_date is next year", async () => {
+    const { stub, insertFn } = queryStub({ data: [], error: null });
+    mockFrom.mockReturnValue(stub);
+
+    const { result } = renderHook(() => useTransactions());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await expect(
+      result.current.addTransaction({
+        amount: "10",
+        description: "",
+        category_id: "",
+        payment_method_id: "",
+        transaction_date: nextYearDay,
+        is_income: false,
+      }),
+    ).rejects.toThrow(FUTURE_MSG);
+
+    expect(insertFn).not.toHaveBeenCalled();
+  });
+
+  it("addTransaction accepts the last day of current month", async () => {
+    const fetchStub = queryStub({ data: [], error: null });
+    const insertResult = makeTx({
+      id: "tx-new",
+      transaction_date: lastDayOfMonth,
+    });
+    fetchStub.singleFn.mockResolvedValue({ data: insertResult, error: null });
+    mockFrom.mockReturnValue(fetchStub.stub);
+
+    const { result } = renderHook(() => useTransactions());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.addTransaction({
+        amount: "10",
+        description: "",
+        category_id: "",
+        payment_method_id: "",
+        transaction_date: lastDayOfMonth,
+        is_income: false,
+      });
+    });
+
+    expect(fetchStub.insertFn).toHaveBeenCalledTimes(1);
+  });
+
+  it("updateTransaction rejects future-month dates", async () => {
+    const { stub } = queryStub({ data: [], error: null });
+    mockFrom.mockReturnValue(stub);
+
+    const { result } = renderHook(() => useTransactions());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await expect(
+      result.current.updateTransaction("tx-1", {
+        amount: "10",
+        description: "",
+        category_id: "",
+        payment_method_id: "",
+        transaction_date: nextMonthDay,
+        is_income: false,
+      }),
+    ).rejects.toThrow(FUTURE_MSG);
+
+    expect(stub.update).not.toHaveBeenCalled();
+  });
+
+  it("updateTransaction accepts in-month dates", async () => {
+    const fetchStub = queryStub({ data: [], error: null });
+    const updatedTx = makeTx({
+      id: "tx-1",
+      transaction_date: lastDayOfMonth,
+    });
+    fetchStub.singleFn.mockResolvedValue({ data: updatedTx, error: null });
+    mockFrom.mockReturnValue(fetchStub.stub);
+
+    const { result } = renderHook(() => useTransactions());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.updateTransaction("tx-1", {
+        amount: "10",
+        description: "",
+        category_id: "",
+        payment_method_id: "",
+        transaction_date: lastDayOfMonth,
+        is_income: false,
+      });
+    });
+
+    expect(fetchStub.stub.update).toHaveBeenCalledTimes(1);
   });
 });
 

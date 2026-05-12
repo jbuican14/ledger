@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
+import { endOfMonth, format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,12 +60,24 @@ export function TransactionForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [amountError, setAmountError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
+
+  // Last day of the current month (local time, same view the user sees in
+  // the native date picker). Used both as the input's `max` attribute and
+  // for the manual-entry guard below.
+  const maxDate = format(endOfMonth(new Date()), "yyyy-MM-dd");
+  const FUTURE_DATE_MSG = "Future months are managed by Recurring (coming soon)";
 
   const validateAmount = (value: string): string | null => {
     if (!value) return "Amount is required";
     const parsed = parseFloat(value);
     if (Number.isNaN(parsed) || parsed <= 0)
       return "Amount must be greater than 0";
+    return null;
+  };
+
+  const validateDate = (value: string): string | null => {
+    if (value > maxDate) return FUTURE_DATE_MSG;
     return null;
   };
   // When true, successful submit clears the form but keeps the Sheet open
@@ -81,11 +93,14 @@ export function TransactionForm({
     setError(null);
 
     const amountValidation = validateAmount(amount);
-    if (amountValidation) {
+    const dateValidation = validateDate(date);
+    if (amountValidation || dateValidation) {
       setAmountError(amountValidation);
+      setDateError(dateValidation);
       return;
     }
     setAmountError(null);
+    setDateError(null);
 
     setIsSubmitting(true);
 
@@ -130,7 +145,7 @@ export function TransactionForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 space-y-6">
+    <form onSubmit={handleSubmit} className="p-4 space-y-6" noValidate>
       {/* Income/Expense Toggle */}
       <div className="flex rounded-lg border p-1 bg-muted/30">
         <button
@@ -281,8 +296,20 @@ export function TransactionForm({
           id="date"
           type="date"
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          max={maxDate}
+          onChange={(e) => {
+            setDate(e.target.value);
+            if (dateError) setDateError(null);
+          }}
+          onBlur={() => setDateError(validateDate(date))}
+          aria-invalid={!!dateError}
+          aria-describedby={dateError ? "date-error" : undefined}
         />
+        {dateError && (
+          <p id="date-error" className="text-sm text-destructive">
+            {dateError}
+          </p>
+        )}
       </div>
 
       {/* Add another — only on Add form, not Edit */}

@@ -8,6 +8,11 @@ export default defineConfig({
     globals: true,
     environment: "node",
   },
+  // Use the React 17+ automatic JSX runtime so .tsx test files don't need
+  // to manually `import React`.
+  esbuild: {
+    jsx: "automatic",
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
