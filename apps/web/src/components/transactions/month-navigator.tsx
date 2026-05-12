@@ -17,7 +17,7 @@ type AnchorPill = {
 };
 
 export function MonthNavigator() {
-  const { year, month, goTo } = useMonth();
+  const { year, month, goTo, today, isCurrent } = useMonth();
   const [pickerOpen, setPickerOpen] = useState(false);
 
   // Anchored pair: previous-previous and previous month relative to the real
@@ -92,6 +92,17 @@ export function MonthNavigator() {
           onOpenPicker={() => setPickerOpen(true)}
         />
       </div>
+
+      {!isCurrent && (
+        <button
+          type="button"
+          onClick={today}
+          className="text-sm text-primary hover:underline underline-offset-2"
+          aria-label="Jump to today"
+        >
+          Today
+        </button>
+      )}
 
       <MonthYearPicker
         open={pickerOpen}

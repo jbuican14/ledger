@@ -15,7 +15,7 @@
 | 5 | Transaction Management | Done | Add/edit/delete, undo delete (KAN-19), payment methods (KAN-24), currency symbol (KAN-26), soft-delete RLS fix (KAN-25) |
 | E | Empty States | Done | Dashboard, transactions, categories (KAN-27) |
 | P | Polish | Done | Skeletons, error boundaries, validation, offline banner (KAN-28) |
-| M | Month Navigation | In Progress | See breakdown below |
+| M | Month Navigation | Done | URL state, three-pill navigator, month picker, previews, today button (KAN-29–37) |
 
 ### Epic M: Month Navigation — Status
 
@@ -25,11 +25,11 @@
 | KAN-30 | `useMonth` hook with URL state | Done |
 | KAN-31 | Three-pill month navigator anchored to current month | Done |
 | KAN-32 | Month/year picker modal | Done |
-| KAN-33 | Summary cards scope to selected month | In Review (PR #21) |
-| KAN-34 | "Today" / jump-to-current shortcut | Pending |
-| KAN-35 | Block future-dated transactions in form | Pending |
-| KAN-36 | Preview subtotals on pill hover (stretch) | Pending |
-| KAN-37 | Persistence rules (URL vs session) | Pending |
+| KAN-33 | Summary cards scope to selected month | Done |
+| KAN-34 | "Today" button to jump to current month | Done |
+| KAN-35 | Block future-dated transactions in form | Done |
+| KAN-36 | Preview subtotals on adjacent pills | Done (PR #23) |
+| KAN-37 | Persistence rules (URL vs session) | Done |
 
 ---
 
