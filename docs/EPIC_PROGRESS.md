@@ -25,10 +25,10 @@
 | KAN-30 | `useMonth` hook with URL state | Done |
 | KAN-31 | Three-pill month navigator anchored to current month | Done |
 | KAN-32 | Month/year picker modal | Done |
-| KAN-33 | Summary cards scope to selected month | In Review (PR #21) |
+| KAN-33 | Summary cards scope to selected month | Done |
 | KAN-34 | "Today" / jump-to-current shortcut | Pending |
-| KAN-35 | Block future-dated transactions in form | Pending |
-| KAN-36 | Preview subtotals on pill hover (stretch) | Pending |
+| KAN-35 | Block future-dated transactions in form | Done |
+| KAN-36 | Preview subtotals on adjacent pills | Done (PR #23) |
 | KAN-37 | Persistence rules (URL vs session) | Pending |
 
 ---
