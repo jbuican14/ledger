@@ -13,7 +13,7 @@ type AnchorPill = {
 };
 
 export function MonthNavigator() {
-  const { year, month, goTo } = useMonth();
+  const { year, month, goTo, today, isCurrent } = useMonth();
   const [pickerOpen, setPickerOpen] = useState(false);
 
   // Anchored pair: previous-previous and previous month relative to the real
@@ -50,23 +50,27 @@ export function MonthNavigator() {
 
   return (
     <>
-      <div className="flex items-stretch gap-2">
+      <div className="flex items-start gap-2">
         {leftPills.map((pill) => {
           const isSelected = pill.year === year && pill.month === month;
           const date = new Date(pill.year, pill.month - 1, 1);
           return (
-            <button
+            <div
               key={`${pill.year}-${pill.month}`}
-              type="button"
-              onClick={() => goTo(pill.year, pill.month)}
-              aria-pressed={isSelected}
-              className={cn(pillBase, "flex-1 flex-col gap-1", pillState(isSelected))}
+              className="flex-1 flex flex-col gap-1"
             >
-              <span className="leading-snug">{format(date, "MMM")}</span>
-              <span className="text-[10px] font-normal opacity-60 leading-tight">
-                {pill.year}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => goTo(pill.year, pill.month)}
+                aria-pressed={isSelected}
+                className={cn(pillBase, "w-full flex-col gap-1", pillState(isSelected))}
+              >
+                <span className="leading-snug">{format(date, "MMM")}</span>
+                <span className="text-[10px] font-normal opacity-60 leading-tight">
+                  {pill.year}
+                </span>
+              </button>
+            </div>
           );
         })}
 
@@ -77,6 +81,17 @@ export function MonthNavigator() {
           onOpenPicker={() => setPickerOpen(true)}
         />
       </div>
+
+      {!isCurrent && (
+        <button
+          type="button"
+          onClick={today}
+          className="text-sm text-primary hover:underline underline-offset-2"
+          aria-label="Jump to today"
+        >
+          Today
+        </button>
+      )}
 
       <MonthYearPicker
         open={pickerOpen}
