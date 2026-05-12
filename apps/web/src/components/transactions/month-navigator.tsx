@@ -60,10 +60,10 @@ export function MonthNavigator() {
               type="button"
               onClick={() => goTo(pill.year, pill.month)}
               aria-pressed={isSelected}
-              className={cn(pillBase, "flex-1 flex-col gap-0", pillState(isSelected))}
+              className={cn(pillBase, "flex-1 flex-col gap-1", pillState(isSelected))}
             >
-              <span className="leading-tight">{format(date, "MMM")}</span>
-              <span className="text-[10px] font-normal opacity-60 leading-none">
+              <span className="leading-snug">{format(date, "MMM")}</span>
+              <span className="text-[10px] font-normal opacity-60 leading-tight">
                 {pill.year}
               </span>
             </button>
