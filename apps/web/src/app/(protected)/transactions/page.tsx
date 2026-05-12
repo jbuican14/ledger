@@ -11,7 +11,10 @@ import { useMonth } from "@/hooks/use-month";
 import { TransactionList } from "@/components/transactions/transaction-list";
 import { TransactionForm } from "@/components/transactions/transaction-form";
 import { MonthNavigator } from "@/components/transactions/month-navigator";
-import { TransactionListSkeleton } from "@/components/ui/skeleton";
+import {
+  TransactionListSkeleton,
+  StatCardSkeleton,
+} from "@/components/ui/skeleton";
 import {
   Sheet,
   SheetContent,
@@ -111,18 +114,27 @@ export default function TransactionsPage() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-card border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground">Income</p>
-            <p className="text-xl font-bold text-green-600">
-              +{formatCurrency(totals.income)}
-            </p>
-          </div>
-          <div className="bg-card border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground">Expenses</p>
-            <p className="text-xl font-bold">
-              -{formatCurrency(totals.expenses)}
-            </p>
-          </div>
+          {isLoading ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            <>
+              <div className="bg-card border rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">Income</p>
+                <p className="text-xl font-bold text-green-600">
+                  +{formatCurrency(totals.income)}
+                </p>
+              </div>
+              <div className="bg-card border rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">Expenses</p>
+                <p className="text-xl font-bold">
+                  -{formatCurrency(totals.expenses)}
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Transaction List */}
