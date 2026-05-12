@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AuthProvider } from "@/lib/auth/auth-context";
-import { AppShell } from "@/components/layout";
+import { AppShell, OfflineBanner } from "@/components/layout";
 import type { Profile, Household } from "@/types/database";
 
 export default async function ProtectedLayout({
@@ -44,6 +44,7 @@ export default async function ProtectedLayout({
       initialProfile={profile}
       initialHousehold={household}
     >
+      <OfflineBanner />
       <AppShell>{children}</AppShell>
     </AuthProvider>
   );

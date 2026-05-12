@@ -59,6 +59,15 @@ export function TransactionForm({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [amountError, setAmountError] = useState<string | null>(null);
+
+  const validateAmount = (value: string): string | null => {
+    if (!value) return "Amount is required";
+    const parsed = parseFloat(value);
+    if (Number.isNaN(parsed) || parsed <= 0)
+      return "Amount must be greater than 0";
+    return null;
+  };
   // When true, successful submit clears the form but keeps the Sheet open
   // for rapid bulk entry. Only relevant on the Add form (not Edit).
   const [addAnother, setAddAnother] = useState(false);
@@ -71,10 +80,12 @@ export function TransactionForm({
     e.preventDefault();
     setError(null);
 
-    if (!amount || parseFloat(amount) <= 0) {
-      setError("Please enter a valid amount");
+    const amountValidation = validateAmount(amount);
+    if (amountValidation) {
+      setAmountError(amountValidation);
       return;
     }
+    setAmountError(null);
 
     setIsSubmitting(true);
 
@@ -170,11 +181,22 @@ export function TransactionForm({
             min="0"
             placeholder="0.00"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => {
+              setAmount(e.target.value);
+              if (amountError) setAmountError(null);
+            }}
+            onBlur={() => setAmountError(validateAmount(amount))}
             className="pl-7 text-lg"
+            aria-invalid={!!amountError}
+            aria-describedby={amountError ? "amount-error" : undefined}
             autoFocus
           />
         </div>
+        {amountError && (
+          <p id="amount-error" className="text-sm text-destructive">
+            {amountError}
+          </p>
+        )}
       </div>
 
       {/* Description */}
