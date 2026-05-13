@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { StatCardSkeleton } from "@/components/ui/skeleton";
 import { RecurringBanner } from "@/components/recurring-transactions/recurring-banner";
 import { BudgetWidget } from "@/components/budget/budget-widget";
+import { CategoryBreakdown } from "@/components/dashboard/category-breakdown";
 
 export default function DashboardPage() {
   const { user, profile, household } = useAuth();
@@ -88,6 +89,11 @@ export default function DashboardPage() {
             <p className="text-2xl font-bold">0%</p>
             <p className="text-xs text-muted-foreground mt-1">0 active goals</p>
           </div>
+        </div>
+
+        {/* Category breakdown */}
+        <div className="mt-6">
+          <CategoryBreakdown transactions={transactions} />
         </div>
 
         {/* User & Household Info */}
