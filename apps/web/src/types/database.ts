@@ -102,3 +102,13 @@ export interface TransactionFormData {
   transaction_date: string;
   is_income: boolean;
 }
+
+export interface Budget {
+  id: string;
+  household_id: string;
+  year: number;
+  month: number;
+  amount: number;
+  created_at: string;
+  updated_at: string;
+}
