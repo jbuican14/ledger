@@ -11,6 +11,7 @@ export type CategoryFormData = {
   name: string;
   type: CategoryType;
   color: string;
+  icon?: string | null;
 };
 
 export function useCategories() {
@@ -60,7 +61,7 @@ export function useCategories() {
       name: formData.name.trim(),
       type: formData.type,
       color: formData.color,
-      icon: null,
+      icon: formData.icon ?? null,
       sort_order: maxOrder + 1,
     });
 
@@ -82,6 +83,31 @@ export function useCategories() {
     return { error: null };
   };
 
+  // Count how many transactions and recurring rules still reference this
+  // category. Used to warn the user before delete cascades them all to NULL.
+  const getCategoryUsage = async (
+    id: string,
+  ): Promise<{ transactions: number; recurring: number; error: string | null }> => {
+    const [txRes, recRes] = await Promise.all([
+      supabase
+        .from("transactions")
+        .select("*", { count: "exact", head: true })
+        .eq("category_id", id)
+        .is("deleted_at", null),
+      supabase
+        .from("recurring_transactions")
+        .select("*", { count: "exact", head: true })
+        .eq("category_id", id),
+    ]);
+    if (txRes.error) return { transactions: 0, recurring: 0, error: txRes.error.message };
+    if (recRes.error) return { transactions: 0, recurring: 0, error: recRes.error.message };
+    return {
+      transactions: txRes.count ?? 0,
+      recurring: recRes.count ?? 0,
+      error: null,
+    };
+  };
+
   const expenseCategories = categories.filter((c) => c.type === "expense");
   const incomeCategories = categories.filter((c) => c.type === "income");
 
@@ -91,6 +117,7 @@ export function useCategories() {
     incomeCategories,
     addCategory,
     deleteCategory,
+    getCategoryUsage,
     isLoading,
     error,
   };
