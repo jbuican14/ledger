@@ -63,7 +63,7 @@ supabase/           → Migrations & edge functions
 - Multi-tenant via `household_id` on all data tables
 - Row Level Security (RLS) enabled
 - Soft delete with `deleted_at` column on transactions
-- Generate types: `pnpm --filter @ledger/database generate-types`
+- Generate types: `pnpm --filter @ledger/database generate-types` (reads schema from the linked remote Supabase project; no Docker required). Use `generate-types:local` if you're running the full local Supabase stack via Docker.
 
 ### Migration template for new tables
 

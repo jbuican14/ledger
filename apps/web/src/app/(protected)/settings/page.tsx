@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/toast";
 import { CategoryManagement } from "@/components/categories/category-management";
 import { PaymentMethodManagement } from "@/components/payment-methods/payment-method-management";
 import { RecurringTransactionManagement } from "@/components/recurring-transactions/recurring-transaction-management";
+import { BudgetManagement } from "@/components/budget/budget-management";
 
 export default function SettingsPage() {
   const { user, profile, household, signOut } = useAuth();
@@ -57,6 +58,11 @@ export default function SettingsPage() {
             ) : (
               <p className="text-muted-foreground text-sm">No household configured</p>
             )}
+          </div>
+
+          {/* Budget */}
+          <div className="bg-card border rounded-lg p-4">
+            <BudgetManagement />
           </div>
 
           {/* Categories */}
