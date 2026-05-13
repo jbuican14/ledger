@@ -125,3 +125,59 @@ describe("TransactionForm — future-date blocking (KAN-35)", () => {
     expect(screen.queryByText(FUTURE_MSG)).toBeNull();
   });
 });
+
+describe("TransactionForm — amount validation (KAN-55)", () => {
+  function renderForm(
+    overrides: Partial<React.ComponentProps<typeof TransactionForm>> = {},
+  ) {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const onClose = vi.fn();
+    const props = {
+      categories: [],
+      paymentMethods: [],
+      onSubmit,
+      onClose,
+      ...overrides,
+    };
+    const utils = render(<TransactionForm {...props} />);
+    return { ...utils, onSubmit, onClose };
+  }
+
+  it("shows inline error after blurring with empty amount", () => {
+    renderForm();
+    const amountInput = screen.getByLabelText(/Amount/i) as HTMLInputElement;
+    fireEvent.blur(amountInput);
+    expect(screen.getByText(/Amount is required/i)).toBeTruthy();
+    expect(amountInput.getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("shows inline error after blurring with zero", () => {
+    renderForm();
+    const amountInput = screen.getByLabelText(/Amount/i) as HTMLInputElement;
+    fireEvent.change(amountInput, { target: { value: "0" } });
+    fireEvent.blur(amountInput);
+    expect(screen.getByText(/greater than 0/i)).toBeTruthy();
+    expect(amountInput.getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("blocks submit when amount is invalid", () => {
+    const { onSubmit } = renderForm();
+    const submitButton = screen.getByRole("button", {
+      name: /Add Transaction/i,
+    });
+    fireEvent.click(submitButton);
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByText(/Amount is required/i)).toBeTruthy();
+  });
+
+  it("clears amount error when a valid value is typed", () => {
+    renderForm();
+    const amountInput = screen.getByLabelText(/Amount/i) as HTMLInputElement;
+    fireEvent.blur(amountInput);
+    expect(screen.queryByText(/Amount is required/i)).toBeTruthy();
+
+    fireEvent.change(amountInput, { target: { value: "10" } });
+    expect(screen.queryByText(/Amount is required/i)).toBeNull();
+    expect(amountInput.getAttribute("aria-invalid")).toBe("false");
+  });
+});
