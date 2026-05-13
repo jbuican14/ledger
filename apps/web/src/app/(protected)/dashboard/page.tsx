@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCardSkeleton } from "@/components/ui/skeleton";
 import { RecurringBanner } from "@/components/recurring-transactions/recurring-banner";
+import { BudgetWidget } from "@/components/budget/budget-widget";
 
 export default function DashboardPage() {
   const { user, profile, household } = useAuth();
@@ -80,11 +81,7 @@ export default function DashboardPage() {
             <p className="text-xs text-muted-foreground mt-1">Total spent</p>
           </div>
 
-          <div className="bg-card border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground">Budget Remaining</p>
-            <p className="text-2xl font-bold text-green-600">£0.00</p>
-            <p className="text-xs text-muted-foreground mt-1">of £0.00 budget</p>
-          </div>
+          <BudgetWidget year={year} month={month} spent={totals.expenses} />
 
           <div className="bg-card border rounded-lg p-4">
             <p className="text-sm text-muted-foreground">Goals Progress</p>
