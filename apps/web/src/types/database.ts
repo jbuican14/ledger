@@ -112,3 +112,21 @@ export interface Budget {
   created_at: string;
   updated_at: string;
 }
+
+export type GoalStatus = "active" | "completed" | "archived";
+
+// current_amount is denormalized — the app maintains it as the SUM of
+// goal_contributions.amount for the goal. Negative values are allowed
+// (withdrawals exceeding deposits surface as an "over-withdrawn" state).
+export interface Goal {
+  id: string;
+  household_id: string;
+  name: string;
+  target_amount: number;
+  current_amount: number;
+  target_date: string | null; // ISO date (YYYY-MM-DD)
+  icon: string | null;
+  status: GoalStatus;
+  created_at: string;
+  updated_at: string;
+}
