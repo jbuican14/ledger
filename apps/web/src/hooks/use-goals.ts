@@ -92,3 +92,41 @@ export function useGoals() {
     refetch: fetchGoals,
   };
 }
+
+// Single-goal hook for the detail page. Separate from useGoals to avoid
+// pulling the full list when we only need one row.
+export function useGoal(id: string | undefined) {
+  const { household } = useAuth();
+  const [goal, setGoal] = useState<Goal | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchGoal = useCallback(async () => {
+    if (!household?.id || !id) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+
+    const { data, error: fetchError } = await supabase
+      .from("goals")
+      .select("*")
+      .eq("household_id", household.id)
+      .eq("id", id)
+      .maybeSingle();
+
+    if (fetchError) {
+      setError(fetchError.message);
+    } else {
+      setGoal((data as Goal) ?? null);
+    }
+    setIsLoading(false);
+  }, [household?.id, id]);
+
+  useEffect(() => {
+    fetchGoal();
+  }, [fetchGoal]);
+
+  return { goal, isLoading, error, refetch: fetchGoal };
+}
