@@ -118,7 +118,15 @@ Script: `./scripts/create-jira-ticket.sh "Title" "Description" "Task|Epic|Subtas
 
 ## Current Phase
 
-**Phase 1: Core MVP** - Foundation, Auth, Navigation, Categories, Transactions
+**Phase 1: Core MVP** — ✅ Complete (Epics 1–8)
+
+**Phase 2: Engagement** — in progress
+- ✅ Epic 9: Recurring Transactions (KAN-41–47)
+- ✅ Epic 12: Budget (Simple) (KAN-59, KAN-61)
+- 🟡 Epic 13: Dashboard Enhanced — partial (budget widget KAN-61, category breakdown KAN-62)
+- ⏳ Epic 10: Household Invites
+- ⏳ Epic 11: Savings Goals
+- ⏳ Epic 14: Feedback & Insights
 
 ## UX Principles
 
