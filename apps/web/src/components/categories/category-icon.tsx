@@ -9,11 +9,26 @@ import {
   Box,
   Banknote,
   Coins,
+  Home,
+  Lightbulb,
+  Droplet,
+  Flame,
+  Wifi,
+  Coffee,
+  Fuel,
+  Train,
+  Gamepad2,
+  Dumbbell,
+  Plane,
+  Gift,
+  Pill,
+  PiggyBank,
+  Tag,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ICON_MAP: Record<string, LucideIcon> = {
+export const ICON_MAP: Record<string, LucideIcon> = {
   "shopping-cart": ShoppingCart,
   "file-text": FileText,
   car: Car,
@@ -24,6 +39,21 @@ const ICON_MAP: Record<string, LucideIcon> = {
   box: Box,
   banknote: Banknote,
   coins: Coins,
+  home: Home,
+  lightbulb: Lightbulb,
+  droplet: Droplet,
+  flame: Flame,
+  wifi: Wifi,
+  coffee: Coffee,
+  fuel: Fuel,
+  train: Train,
+  "gamepad-2": Gamepad2,
+  dumbbell: Dumbbell,
+  plane: Plane,
+  gift: Gift,
+  pill: Pill,
+  "piggy-bank": PiggyBank,
+  tag: Tag,
 };
 
 export function CategoryIcon({
