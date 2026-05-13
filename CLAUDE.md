@@ -65,6 +65,39 @@ supabase/           → Migrations & edge functions
 - Soft delete with `deleted_at` column on transactions
 - Generate types: `pnpm --filter @ledger/database generate-types`
 
+### Migration template for new tables
+
+**Required.** Supabase is removing automatic Data API exposure for `public` tables (rollout completes Oct 30, 2026 — see [discussion #45329](https://github.com/orgs/supabase/discussions/45329)). Every new table created in a migration MUST include explicit `GRANT` statements or it will be invisible to `supabase-js`.
+
+Use this template for any new table in `public`:
+
+```sql
+CREATE TABLE public.your_table (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  -- ...your columns...
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- 1. Grants — required for Data API (supabase-js) access
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.your_table TO authenticated;
+
+-- 2. Enable RLS
+ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
+
+-- 3. Policies (household-scoped via get_user_household_id())
+CREATE POLICY "Users view own household rows" ON public.your_table
+  FOR SELECT TO authenticated
+  USING (household_id = get_user_household_id());
+-- ...repeat for INSERT / UPDATE / DELETE as needed...
+```
+
+Notes:
+- This app uses `authenticated` only — never grant to `anon` unless the table is intentionally public.
+- Never grant to `service_role` from app migrations; that role bypasses RLS and is reserved for server-only contexts.
+- If a Data API call returns `42501 permission denied for table`, the grant is missing.
+
 ## Key Files
 
 - `PRODUCT_SPEC.md` - Full product specification
