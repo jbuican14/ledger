@@ -8,13 +8,14 @@ import { useMonth } from "@/hooks/use-month";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCardSkeleton } from "@/components/ui/skeleton";
+import { RecurringBanner } from "@/components/recurring-transactions/recurring-banner";
 
 export default function DashboardPage() {
   const { user, profile, household } = useAuth();
   // Dashboard always reflects the same month range as the transactions page,
   // so "This Month" stays in sync with the user's currently-selected month.
-  const { range } = useMonth();
-  const { transactions, totals, isLoading } = useTransactions(range);
+  const { range, year, month } = useMonth();
+  const { transactions, totals, isLoading, refetch } = useTransactions(range);
 
   const isEmpty = !isLoading && transactions.length === 0;
 
@@ -44,6 +45,9 @@ export default function DashboardPage() {
       <div className="p-4 lg:p-6">
         <div className="max-w-4xl">
           <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+          {/* Banner can populate the empty list in one click for users who
+              set up recurring rules before logging any transactions. */}
+          <RecurringBanner year={year} month={month} onAdded={refetch} />
           <EmptyState
             icon={Wallet}
             title={`Welcome${profile?.display_name ? `, ${profile.display_name}` : ""}!`}
@@ -63,6 +67,8 @@ export default function DashboardPage() {
     <div className="p-4 lg:p-6">
       <div className="max-w-4xl">
         <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+
+        <RecurringBanner year={year} month={month} onAdded={refetch} />
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* Quick Stats */}
