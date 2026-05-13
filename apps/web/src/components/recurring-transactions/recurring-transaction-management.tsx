@@ -165,7 +165,10 @@ export function RecurringTransactionManagement() {
       )}
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="bottom" className="pb-safe">
+        <SheetContent
+          side="bottom"
+          className="pb-safe max-h-[90vh] overflow-y-auto"
+        >
           <SheetHeader className="pb-2">
             <SheetTitle>
               {editingItem ? "Edit recurring" : "New recurring"}
