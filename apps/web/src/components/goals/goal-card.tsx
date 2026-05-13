@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { Plus, PiggyBank } from "lucide-react";
 import { CategoryIcon } from "@/components/categories/category-icon";
@@ -10,11 +11,12 @@ import type { Goal } from "@/types/database";
 type Props = {
   goal: Goal;
   // onAddContribution: () => void;  // wired in KAN-68
-  // onClick?: () => void;            // wired in KAN-67 (detail page)
 };
 
-// Generic goal display card used on the dashboard widget and the /goals
-// list. Tappable target + inline +Add button arrive with KAN-67/68.
+// Generic goal display card used on the /goals list and the dashboard
+// widget. The whole card is a tappable Link to /goals/[id]; the +Add
+// button sits as an overlay sibling so we keep valid HTML (no <button>
+// inside <a>).
 export function GoalCard({ goal }: Props) {
   const { household } = useAuth();
   const currency = household?.currency ?? "GBP";
@@ -38,7 +40,6 @@ export function GoalCard({ goal }: Props) {
         ? "bg-amber-500"
         : "bg-green-600";
 
-  // Bar fill is clamped to 100; over-withdrawn shows an empty red bar.
   const fillPct = isOverWithdrawn ? 0 : Math.min(pct, 100);
 
   let dateLabel: string | null = null;
@@ -53,55 +54,62 @@ export function GoalCard({ goal }: Props) {
   }
 
   return (
-    <div className="bg-card border rounded-lg p-4">
-      <div className="flex items-center gap-3 mb-3">
-        <CategoryIcon
-          name={goal.icon}
-          color="#0ea5e9"
-          size={18}
-          className="w-10 h-10 shrink-0"
-        />
-        <div className="flex-1 min-w-0">
-          <p className="font-medium truncate">{goal.name}</p>
-          <p className="text-xs text-muted-foreground truncate">
-            {formatCurrency(goal.current_amount)} of{" "}
-            {formatCurrency(goal.target_amount)}
-            {isComplete && " · Reached 🎉"}
-          </p>
-        </div>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled
-          aria-label="Add contribution (coming in KAN-68)"
-        >
-          <Plus className="w-3.5 h-3.5 mr-1" />
-          Add
-        </Button>
-      </div>
-
-      <div
-        className="h-2 bg-muted rounded-full overflow-hidden"
-        role="progressbar"
-        aria-valuenow={Math.max(0, Math.min(Math.round(pct), 100))}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={`${goal.name}: ${Math.round(pct)}% saved`}
+    <div className="relative">
+      <Link
+        href={`/goals/${goal.id}`}
+        className="block bg-card border rounded-lg p-4 hover:bg-muted/30 transition-colors pr-20"
       >
-        <div
-          className={`h-full ${barColor} transition-all rounded-full`}
-          style={{ width: `${fillPct}%` }}
-        />
-      </div>
+        <div className="flex items-center gap-3 mb-3">
+          <CategoryIcon
+            name={goal.icon}
+            color="#0ea5e9"
+            size={18}
+            className="w-10 h-10 shrink-0"
+          />
+          <div className="flex-1 min-w-0">
+            <p className="font-medium truncate">{goal.name}</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {formatCurrency(goal.current_amount)} of{" "}
+              {formatCurrency(goal.target_amount)}
+              {isComplete && " · Reached 🎉"}
+            </p>
+          </div>
+        </div>
 
-      <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
-        <span>
-          {isOverWithdrawn
-            ? `Over-withdrawn by ${formatCurrency(Math.abs(goal.current_amount))}`
-            : `${Math.round(pct)}% saved`}
-        </span>
-        {dateLabel && <span>{dateLabel}</span>}
-      </div>
+        <div
+          className="h-2 bg-muted rounded-full overflow-hidden"
+          role="progressbar"
+          aria-valuenow={Math.max(0, Math.min(Math.round(pct), 100))}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`${goal.name}: ${Math.round(pct)}% saved`}
+        >
+          <div
+            className={`h-full ${barColor} transition-all rounded-full`}
+            style={{ width: `${fillPct}%` }}
+          />
+        </div>
+
+        <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
+          <span>
+            {isOverWithdrawn
+              ? `Over-withdrawn by ${formatCurrency(Math.abs(goal.current_amount))}`
+              : `${Math.round(pct)}% saved`}
+          </span>
+          {dateLabel && <span>{dateLabel}</span>}
+        </div>
+      </Link>
+
+      <Button
+        size="sm"
+        variant="outline"
+        disabled
+        aria-label="Add contribution (coming in KAN-68)"
+        className="absolute top-4 right-4"
+      >
+        <Plus className="w-3.5 h-3.5 mr-1" />
+        Add
+      </Button>
     </div>
   );
 }
