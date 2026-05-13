@@ -11,6 +11,7 @@ import { StatCardSkeleton } from "@/components/ui/skeleton";
 import { RecurringBanner } from "@/components/recurring-transactions/recurring-banner";
 import { BudgetWidget } from "@/components/budget/budget-widget";
 import { CategoryBreakdown } from "@/components/dashboard/category-breakdown";
+import { RecentTransactions } from "@/components/dashboard/recent-transactions";
 
 export default function DashboardPage() {
   const { user, profile, household } = useAuth();
@@ -91,9 +92,10 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Category breakdown */}
-        <div className="mt-6">
+        {/* Category breakdown + Recent activity */}
+        <div className="grid gap-4 lg:grid-cols-2 mt-6">
           <CategoryBreakdown transactions={transactions} />
+          <RecentTransactions transactions={transactions} />
         </div>
 
         {/* User & Household Info */}
