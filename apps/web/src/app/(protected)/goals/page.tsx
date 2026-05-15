@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ListItemSkeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
@@ -16,11 +16,15 @@ import { useGoals } from "@/hooks/use-goals";
 import { GoalCard } from "@/components/goals/goal-card";
 import { GoalForm } from "@/components/goals/goal-form";
 import { GoalsEmptyState } from "@/components/goals/goals-empty-state";
+import { cn } from "@/lib/utils";
+
+type View = "active" | "archived";
 
 export default function GoalsPage() {
-  const { activeGoals, addGoal, isLoading, error } = useGoals();
+  const { activeGoals, archivedGoals, addGoal, isLoading, error } = useGoals();
   const { showToast } = useToast();
 
+  const [view, setView] = useState<View>("active");
   const [sheetOpen, setSheetOpen] = useState(false);
   // Suggested-name seed from the empty-state chips. Cleared each time the
   // sheet closes so a manual "+ New goal" doesn't carry over a stale value.
@@ -30,6 +34,9 @@ export default function GoalsPage() {
     setSuggestedName(seed ?? "");
     setSheetOpen(true);
   };
+
+  const list = view === "active" ? activeGoals : archivedGoals;
+  const showArchivedToggle = archivedGoals.length > 0;
 
   return (
     <div className="p-4 lg:p-6">
@@ -44,6 +51,40 @@ export default function GoalsPage() {
           )}
         </div>
 
+        {/* Active / Archived toggle. Only renders when there's something
+            archived to switch to — otherwise it's just visual noise. */}
+        {showArchivedToggle && (
+          <div className="inline-flex gap-1 p-1 bg-muted rounded-lg mb-4">
+            <button
+              type="button"
+              onClick={() => setView("active")}
+              aria-pressed={view === "active"}
+              className={cn(
+                "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                view === "active"
+                  ? "bg-card shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Active ({activeGoals.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("archived")}
+              aria-pressed={view === "archived"}
+              className={cn(
+                "px-3 py-1.5 text-sm font-medium rounded-md transition-colors inline-flex items-center gap-1.5",
+                view === "archived"
+                  ? "bg-card shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Archive className="w-3.5 h-3.5" />
+              Archived ({archivedGoals.length})
+            </button>
+          </div>
+        )}
+
         {error && (
           <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 mb-4 text-sm text-destructive">
             {error}
@@ -55,11 +96,15 @@ export default function GoalsPage() {
             <ListItemSkeleton />
             <ListItemSkeleton />
           </div>
-        ) : activeGoals.length === 0 ? (
+        ) : list.length === 0 && view === "active" ? (
           <GoalsEmptyState onCreate={openCreate} />
+        ) : list.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-8 text-center">
+            No archived goals.
+          </p>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
-            {activeGoals.map((goal) => (
+            {list.map((goal) => (
               <GoalCard key={goal.id} goal={goal} />
             ))}
           </div>

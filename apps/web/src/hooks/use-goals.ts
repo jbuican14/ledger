@@ -237,5 +237,45 @@ export function useGoal(id: string | undefined) {
     return { error: null };
   };
 
-  return { goal, isLoading, error, refetch: fetchGoal, updateGoal };
+  // Archives the goal — hides it from the active list / dashboard widget
+  // but keeps history intact. Reversible via unarchiveGoal.
+  const archiveGoal = async (): Promise<{ error: string | null }> => {
+    if (!goal) return { error: "No goal loaded" };
+    const { data, error: archiveError } = await supabase
+      .from("goals")
+      .update({ status: "archived" })
+      .eq("id", goal.id)
+      .select()
+      .single();
+    if (archiveError) return { error: archiveError.message };
+    setGoal(data as Goal);
+    return { error: null };
+  };
+
+  // Restores an archived goal. Re-derives active vs completed from the
+  // current total so it lands in the right bucket.
+  const unarchiveGoal = async (): Promise<{ error: string | null }> => {
+    if (!goal) return { error: "No goal loaded" };
+    const restoredStatus: "active" | "completed" =
+      goal.current_amount >= goal.target_amount ? "completed" : "active";
+    const { data, error: unarchiveError } = await supabase
+      .from("goals")
+      .update({ status: restoredStatus })
+      .eq("id", goal.id)
+      .select()
+      .single();
+    if (unarchiveError) return { error: unarchiveError.message };
+    setGoal(data as Goal);
+    return { error: null };
+  };
+
+  return {
+    goal,
+    isLoading,
+    error,
+    refetch: fetchGoal,
+    updateGoal,
+    archiveGoal,
+    unarchiveGoal,
+  };
 }

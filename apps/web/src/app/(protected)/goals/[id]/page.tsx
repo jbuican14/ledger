@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   Pencil,
   Archive,
+  ArchiveRestore,
   Plus,
   Minus,
   PiggyBank,
@@ -27,6 +28,12 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogTitle,
+  AlertDialogDescription,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/toast";
 import { CategoryIcon } from "@/components/categories/category-icon";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -53,6 +60,8 @@ export default function GoalDetailPage() {
     error,
     refetch: refetchGoal,
     updateGoal,
+    archiveGoal,
+    unarchiveGoal,
   } = useGoal(params?.id);
   const {
     contributions,
@@ -66,6 +75,8 @@ export default function GoalDetailPage() {
   const currency = household?.currency ?? "GBP";
 
   const [sheet, setSheet] = useState<SheetMode>({ kind: "closed" });
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const [archiveBusy, setArchiveBusy] = useState(false);
 
   // ?add=1 deep-link from the +Add button on goal cards. Open the sheet
   // once on mount, then strip the param so a refresh doesn't re-trigger.
@@ -190,10 +201,35 @@ export default function GoalDetailPage() {
               <Pencil className="w-3.5 h-3.5 mr-1" />
               Edit
             </Button>
-            <Button variant="outline" size="sm" disabled aria-label="Archive (KAN-70)">
-              <Archive className="w-3.5 h-3.5 mr-1" />
-              Archive
-            </Button>
+            {goal.status === "archived" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  setArchiveBusy(true);
+                  const { error: err } = await unarchiveGoal();
+                  setArchiveBusy(false);
+                  if (err) {
+                    showToast(err, "error");
+                  } else {
+                    showToast("Goal restored", "success");
+                  }
+                }}
+                disabled={archiveBusy}
+              >
+                <ArchiveRestore className="w-3.5 h-3.5 mr-1" />
+                {archiveBusy ? "Restoring…" : "Restore"}
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowArchiveDialog(true)}
+              >
+                <Archive className="w-3.5 h-3.5 mr-1" />
+                Archive
+              </Button>
+            )}
           </div>
         </div>
 
@@ -339,6 +375,48 @@ export default function GoalDetailPage() {
           </div>
         </SheetContent>
       </Sheet>
+
+      <AlertDialog
+        open={showArchiveDialog}
+        onOpenChange={(open) => {
+          if (!archiveBusy) setShowArchiveDialog(open);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogTitle>Archive &quot;{goal.name}&quot;?</AlertDialogTitle>
+          <AlertDialogDescription>
+            It will be hidden from your active list and dashboard. History
+            stays intact — you can restore it any time from{" "}
+            <span className="font-medium">Goals → Show archived</span>.
+          </AlertDialogDescription>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowArchiveDialog(false)}
+              disabled={archiveBusy}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                setArchiveBusy(true);
+                const { error: err } = await archiveGoal();
+                setArchiveBusy(false);
+                setShowArchiveDialog(false);
+                if (err) {
+                  showToast(err, "error");
+                } else {
+                  showToast("Goal archived", "success");
+                }
+              }}
+              disabled={archiveBusy}
+            >
+              {archiveBusy ? "Archiving…" : "Archive goal"}
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
