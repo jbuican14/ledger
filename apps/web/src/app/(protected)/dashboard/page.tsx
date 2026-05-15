@@ -12,6 +12,7 @@ import { RecurringBanner } from "@/components/recurring-transactions/recurring-b
 import { BudgetWidget } from "@/components/budget/budget-widget";
 import { CategoryBreakdown } from "@/components/dashboard/category-breakdown";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
+import { GoalsWidget } from "@/components/dashboard/goals-widget";
 
 export default function DashboardPage() {
   const { user, profile, household } = useAuth();
@@ -73,7 +74,7 @@ export default function DashboardPage() {
 
         <RecurringBanner year={year} month={month} onAdded={refetch} />
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           {/* Quick Stats */}
           <div className="bg-card border rounded-lg p-4">
             <p className="text-sm text-muted-foreground">This Month</p>
@@ -84,18 +85,13 @@ export default function DashboardPage() {
           </div>
 
           <BudgetWidget year={year} month={month} spent={totals.expenses} />
-
-          <div className="bg-card border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground">Goals Progress</p>
-            <p className="text-2xl font-bold">0%</p>
-            <p className="text-xs text-muted-foreground mt-1">0 active goals</p>
-          </div>
         </div>
 
-        {/* Category breakdown + Recent activity */}
-        <div className="grid gap-4 lg:grid-cols-2 mt-6">
+        {/* Category breakdown + Recent activity + Goals */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
           <CategoryBreakdown transactions={transactions} />
           <RecentTransactions transactions={transactions} />
+          <GoalsWidget />
         </div>
 
         {/* User & Household Info */}
