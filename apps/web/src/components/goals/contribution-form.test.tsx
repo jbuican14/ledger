@@ -45,6 +45,28 @@ describe("ContributionForm (KAN-68)", () => {
     expect(withdraw.getAttribute("aria-pressed")).toBe("false");
   });
 
+  it("opens on the Withdraw tab when defaultDirection='withdraw'", () => {
+    render(
+      <ContributionForm
+        defaultDirection="withdraw"
+        onSubmit={onSubmit}
+        onClose={onClose}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: /^Withdraw$/ }).getAttribute(
+        "aria-pressed",
+      ),
+    ).toBe("true");
+    // Still a NEW entry — submit verb is "Record withdrawal", not "Save changes"
+    expect(
+      screen.getByRole("button", { name: /Record withdrawal/i }),
+    ).toBeTruthy();
+    // Amount and note are blank, not pre-filled from a fake initialData
+    expect((screen.getByLabelText(/Amount/i) as HTMLInputElement).value).toBe("");
+    expect((screen.getByLabelText(/Note/i) as HTMLInputElement).value).toBe("");
+  });
+
   it("submits a positive signed amount for a deposit", async () => {
     render(<ContributionForm onSubmit={onSubmit} onClose={onClose} />);
     fireEvent.change(screen.getByLabelText(/Amount/i), {

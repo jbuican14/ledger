@@ -83,4 +83,66 @@ describe("GoalForm (KAN-65)", () => {
     fireEvent.click(planeBtn);
     expect(planeBtn.getAttribute("aria-pressed")).toBe("true");
   });
+
+  // ── edit mode (KAN-69) ──
+  const editGoal = {
+    id: "g-1",
+    household_id: "hh-1",
+    name: "Holiday",
+    target_amount: 2000,
+    current_amount: 500,
+    target_date: "2026-12-01",
+    icon: "plane",
+    status: "active" as const,
+    created_at: "",
+    updated_at: "",
+  };
+
+  it("pre-fills all fields and shows Save changes label in edit mode", () => {
+    render(
+      <GoalForm initialData={editGoal} onSubmit={onSubmit} onClose={onClose} />,
+    );
+    expect((screen.getByLabelText(/Name/i) as HTMLInputElement).value).toBe(
+      "Holiday",
+    );
+    expect((screen.getByLabelText(/Target amount/i) as HTMLInputElement).value).toBe(
+      "2000",
+    );
+    expect((screen.getByLabelText(/Target date/i) as HTMLInputElement).value).toBe(
+      "2026-12-01",
+    );
+    expect(
+      screen
+        .getByRole("button", { name: /Choose plane icon/i })
+        .getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(screen.getByRole("button", { name: /Save changes/i })).toBeTruthy();
+  });
+
+  it("blocks lowering target_amount below current_amount", async () => {
+    render(
+      <GoalForm initialData={editGoal} onSubmit={onSubmit} onClose={onClose} />,
+    );
+    fireEvent.change(screen.getByLabelText(/Target amount/i), {
+      target: { value: "300" }, // below current_amount of 500
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
+    expect(await screen.findByText(/Can't go below £500/i)).toBeTruthy();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("permits raising target above current_amount", async () => {
+    render(
+      <GoalForm initialData={editGoal} onSubmit={onSubmit} onClose={onClose} />,
+    );
+    fireEvent.change(screen.getByLabelText(/Target amount/i), {
+      target: { value: "3000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ target_amount: 3000 }),
+      );
+    });
+  });
 });

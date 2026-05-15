@@ -9,10 +9,15 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { CategoryIcon, ICON_MAP } from "@/components/categories/category-icon";
 import { cn } from "@/lib/utils";
 import type { GoalFormData } from "@/hooks/use-goals";
+import type { Goal } from "@/types/database";
 
 type Props = {
   onSubmit: (data: GoalFormData) => Promise<{ error: string | null }>;
   onClose: () => void;
+  // Edit mode: when provided, all fields are pre-filled from the goal and
+  // the submit label switches to "Save changes". The target_amount also
+  // becomes constrained — it can't go below the goal's current_amount.
+  initialData?: Goal | null;
   initialName?: string;
 };
 
@@ -30,18 +35,34 @@ const SUGGESTED_ICONS = [
   "coffee",
 ];
 
-export function GoalForm({ onSubmit, onClose, initialName = "" }: Props) {
+export function GoalForm({
+  onSubmit,
+  onClose,
+  initialData,
+  initialName = "",
+}: Props) {
   const { household } = useAuth();
   const currencySymbol = getCurrencySymbol(household?.currency ?? "GBP");
 
-  const [name, setName] = useState(initialName);
-  const [amount, setAmount] = useState("");
-  const [targetDate, setTargetDate] = useState("");
-  const [icon, setIcon] = useState<string>("piggy-bank");
+  const isEditing = !!initialData;
+  const minAllowedTarget = initialData?.current_amount ?? 0;
+
+  const [name, setName] = useState(initialData?.name ?? initialName);
+  const [amount, setAmount] = useState(
+    initialData ? initialData.target_amount.toString() : "",
+  );
+  const [targetDate, setTargetDate] = useState(initialData?.target_date ?? "");
+  const [icon, setIcon] = useState<string>(initialData?.icon ?? "piggy-bank");
   const [nameError, setNameError] = useState<string | null>(null);
   const [amountError, setAmountError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const formatCurrency = (n: number) =>
+    new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: household?.currency ?? "GBP",
+    }).format(n);
 
   const validateName = (v: string): string | null =>
     v.trim() ? null : "Name is required";
@@ -49,6 +70,12 @@ export function GoalForm({ onSubmit, onClose, initialName = "" }: Props) {
     if (!v) return "Target amount is required";
     const n = Number.parseFloat(v);
     if (!Number.isFinite(n) || n <= 0) return "Must be greater than 0";
+    // Reducing the target below what's already saved would put the goal
+    // straight into "completed" land, which isn't what the user wants
+    // when they're nudging a number. Block it explicitly.
+    if (isEditing && minAllowedTarget > 0 && n < minAllowedTarget) {
+      return `Can't go below ${formatCurrency(minAllowedTarget)} already saved`;
+    }
     return null;
   };
 
@@ -176,7 +203,11 @@ export function GoalForm({ onSubmit, onClose, initialName = "" }: Props) {
 
       <div className="flex gap-2 pt-2">
         <Button type="submit" disabled={isSubmitting} className="flex-1">
-          {isSubmitting ? "Creating…" : "Create goal"}
+          {isSubmitting
+            ? "Saving…"
+            : isEditing
+              ? "Save changes"
+              : "Create goal"}
         </Button>
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel

@@ -14,6 +14,9 @@ import type { GoalContribution } from "@/types/database";
 
 type Props = {
   initialData?: GoalContribution | null;
+  // Which tab to open the form on for a NEW entry. Ignored when
+  // initialData is provided (direction comes from initialData.amount sign).
+  defaultDirection?: "deposit" | "withdraw";
   onSubmit: (data: ContributionFormData) => Promise<{ error: string | null }>;
   onDelete?: () => Promise<{ error: string | null }>;
   onClose: () => void;
@@ -24,6 +27,7 @@ type Props = {
 // a contribution is a one-tap flow once a value is typed.
 export function ContributionForm({
   initialData,
+  defaultDirection = "deposit",
   onSubmit,
   onDelete,
   onClose,
@@ -31,7 +35,9 @@ export function ContributionForm({
   const { household } = useAuth();
   const currencySymbol = getCurrencySymbol(household?.currency ?? "GBP");
 
-  const initialIsDeposit = !initialData || initialData.amount > 0;
+  const initialIsDeposit = initialData
+    ? initialData.amount > 0
+    : defaultDirection === "deposit";
   const [isDeposit, setIsDeposit] = useState(initialIsDeposit);
   const [amount, setAmount] = useState(
     initialData ? Math.abs(initialData.amount).toString() : "",
@@ -143,7 +149,6 @@ export function ContributionForm({
             aria-invalid={!!amountError}
             aria-describedby={amountError ? "contribution-amount-error" : undefined}
             className="pl-7"
-            autoFocus={!initialData}
           />
         </div>
         {amountError && (

@@ -35,17 +35,25 @@ import { useGoalContributions } from "@/hooks/use-goal-contributions";
 import { computeGoalPace } from "@/components/goals/goal-pace";
 import { ContributionForm } from "@/components/goals/contribution-form";
 import { ContributionHistory } from "@/components/goals/contribution-history";
+import { GoalForm } from "@/components/goals/goal-form";
 import type { GoalContribution } from "@/types/database";
 
 type SheetMode =
   | { kind: "closed" }
   | { kind: "add"; defaultDirection: "deposit" | "withdraw" }
-  | { kind: "edit"; contribution: GoalContribution };
+  | { kind: "edit"; contribution: GoalContribution }
+  | { kind: "edit-goal" };
 
 export default function GoalDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { goal, isLoading, error, refetch: refetchGoal } = useGoal(params?.id);
+  const {
+    goal,
+    isLoading,
+    error,
+    refetch: refetchGoal,
+    updateGoal,
+  } = useGoal(params?.id);
   const {
     contributions,
     isLoading: contribsLoading,
@@ -174,7 +182,11 @@ export default function GoalDetailPage() {
             </div>
           </div>
           <div className="flex gap-2 shrink-0">
-            <Button variant="outline" size="sm" disabled aria-label="Edit (KAN-69)">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSheet({ kind: "edit-goal" })}
+            >
               <Pencil className="w-3.5 h-3.5 mr-1" />
               Edit
             </Button>
@@ -254,37 +266,42 @@ export default function GoalDetailPage() {
         <SheetContent>
           <SheetHeader>
             <SheetTitle>
-              {sheet.kind === "edit" ? "Edit entry" : "New contribution"}
+              {sheet.kind === "edit-goal"
+                ? "Edit goal"
+                : sheet.kind === "edit"
+                  ? "Edit entry"
+                  : "New contribution"}
             </SheetTitle>
             <SheetDescription>
-              {sheet.kind === "edit"
-                ? "Update the amount, note, or date — the goal total will recalculate."
-                : sheet.kind === "add" && sheet.defaultDirection === "withdraw"
-                  ? "Pulling money out is fine — we'll keep the history straight."
-                  : "Log what you've saved towards this goal."}
+              {sheet.kind === "edit-goal"
+                ? "Adjust the name, target, target date, or icon."
+                : sheet.kind === "edit"
+                  ? "Update the amount, note, or date — the goal total will recalculate."
+                  : sheet.kind === "add" && sheet.defaultDirection === "withdraw"
+                    ? "Pulling money out is fine — we'll keep the history straight."
+                    : "Log what you've saved towards this goal."}
             </SheetDescription>
           </SheetHeader>
           <div className="mt-6">
-            {sheet.kind !== "closed" && (
+            {sheet.kind === "edit-goal" && (
+              <GoalForm
+                initialData={goal}
+                onSubmit={async (data) => {
+                  const result = await updateGoal(data);
+                  if (result.error) return result;
+                  showToast("Goal updated", "success");
+                  return { error: null };
+                }}
+                onClose={closeSheet}
+              />
+            )}
+            {(sheet.kind === "add" || sheet.kind === "edit") && (
               <ContributionForm
                 initialData={
-                  sheet.kind === "edit"
-                    ? sheet.contribution
-                    : sheet.defaultDirection === "withdraw"
-                      ? // Seed an empty edit-shaped object with a negative
-                        // sign so the form opens on the Withdraw side. The
-                        // form re-derives sign from isDeposit on submit.
-                        ({
-                          id: "",
-                          goal_id: "",
-                          household_id: "",
-                          amount: -1,
-                          note: null,
-                          contributed_at: "",
-                          created_at: "",
-                          updated_at: "",
-                        } as GoalContribution)
-                      : null
+                  sheet.kind === "edit" ? sheet.contribution : null
+                }
+                defaultDirection={
+                  sheet.kind === "add" ? sheet.defaultDirection : "deposit"
                 }
                 onSubmit={async (data) => {
                   const result =
