@@ -268,23 +268,10 @@ export default function GoalDetailPage() {
             {sheet.kind !== "closed" && (
               <ContributionForm
                 initialData={
-                  sheet.kind === "edit"
-                    ? sheet.contribution
-                    : sheet.defaultDirection === "withdraw"
-                      ? // Seed an empty edit-shaped object with a negative
-                        // sign so the form opens on the Withdraw side. The
-                        // form re-derives sign from isDeposit on submit.
-                        ({
-                          id: "",
-                          goal_id: "",
-                          household_id: "",
-                          amount: -1,
-                          note: null,
-                          contributed_at: "",
-                          created_at: "",
-                          updated_at: "",
-                        } as GoalContribution)
-                      : null
+                  sheet.kind === "edit" ? sheet.contribution : null
+                }
+                defaultDirection={
+                  sheet.kind === "add" ? sheet.defaultDirection : "deposit"
                 }
                 onSubmit={async (data) => {
                   const result =
