@@ -92,8 +92,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Category breakdown + Recent activity */}
-        <div className="grid gap-4 lg:grid-cols-2 mt-6">
+        {/* Category breakdown + Recent activity + Goals */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6 place-items-center">
           <CategoryBreakdown transactions={transactions} />
           <RecentTransactions transactions={transactions} />
         </div>
