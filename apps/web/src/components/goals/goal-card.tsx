@@ -103,12 +103,16 @@ export function GoalCard({ goal }: Props) {
       <Button
         size="sm"
         variant="outline"
-        disabled
-        aria-label="Add contribution (coming in KAN-68)"
+        asChild
         className="absolute top-4 right-4"
       >
-        <Plus className="w-3.5 h-3.5 mr-1" />
-        Add
+        <Link
+          href={`/goals/${goal.id}?add=1`}
+          aria-label={`Add contribution to ${goal.name}`}
+        >
+          <Plus className="w-3.5 h-3.5 mr-1" />
+          Add
+        </Link>
       </Button>
     </div>
   );

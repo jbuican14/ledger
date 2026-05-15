@@ -1,7 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import {
+  useParams,
+  useRouter,
+  useSearchParams,
+  usePathname,
+} from "next/navigation";
 import { format } from "date-fns";
 import {
   ArrowLeft,
@@ -10,22 +16,60 @@ import {
   Plus,
   Minus,
   PiggyBank,
-  Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ListItemSkeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { useToast } from "@/components/ui/toast";
 import { CategoryIcon } from "@/components/categories/category-icon";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useGoal } from "@/hooks/use-goals";
+import { useGoalContributions } from "@/hooks/use-goal-contributions";
 import { computeGoalPace } from "@/components/goals/goal-pace";
+import { ContributionForm } from "@/components/goals/contribution-form";
+import { ContributionHistory } from "@/components/goals/contribution-history";
+import type { GoalContribution } from "@/types/database";
+
+type SheetMode =
+  | { kind: "closed" }
+  | { kind: "add"; defaultDirection: "deposit" | "withdraw" }
+  | { kind: "edit"; contribution: GoalContribution };
 
 export default function GoalDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { goal, isLoading, error } = useGoal(params?.id);
+  const { goal, isLoading, error, refetch: refetchGoal } = useGoal(params?.id);
+  const {
+    contributions,
+    isLoading: contribsLoading,
+    addContribution,
+    updateContribution,
+    deleteContribution,
+  } = useGoalContributions(params?.id);
   const { household } = useAuth();
+  const { showToast } = useToast();
   const currency = household?.currency ?? "GBP";
+
+  const [sheet, setSheet] = useState<SheetMode>({ kind: "closed" });
+
+  // ?add=1 deep-link from the +Add button on goal cards. Open the sheet
+  // once on mount, then strip the param so a refresh doesn't re-trigger.
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  useEffect(() => {
+    if (searchParams?.get("add") === "1") {
+      setSheet({ kind: "add", defaultDirection: "deposit" });
+      router.replace(pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const formatCurrency = (n: number) =>
     new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(n);
@@ -83,6 +127,23 @@ export default function GoalDetailPage() {
         : "bg-green-600";
   const fillPct = isOver ? 0 : Math.min(pct, 100);
 
+  const closeSheet = () => setSheet({ kind: "closed" });
+  const openAdd = (defaultDirection: "deposit" | "withdraw") =>
+    setSheet({ kind: "add", defaultDirection });
+  const openEdit = (contribution: GoalContribution) =>
+    setSheet({ kind: "edit", contribution });
+
+  const handleDelete = async (c: GoalContribution) => {
+    if (!confirm("Delete this entry? This can't be undone.")) return;
+    const { error: err } = await deleteContribution(c.id);
+    if (err) {
+      showToast(err, "error");
+      return;
+    }
+    await refetchGoal();
+    showToast("Entry deleted", "success");
+  };
+
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-3xl">
@@ -94,7 +155,7 @@ export default function GoalDetailPage() {
           Back to goals
         </Link>
 
-        {/* Header: icon + name + actions */}
+        {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-6">
           <div className="flex items-center gap-3 min-w-0">
             <CategoryIcon
@@ -157,14 +218,13 @@ export default function GoalDetailPage() {
           />
 
           <div className="flex gap-2 mt-5">
-            <Button disabled aria-label="Add money (KAN-68)" className="flex-1">
+            <Button onClick={() => openAdd("deposit")} className="flex-1">
               <Plus className="w-4 h-4 mr-1" />
               Add money
             </Button>
             <Button
               variant="outline"
-              disabled
-              aria-label="Withdraw (KAN-68)"
+              onClick={() => openAdd("withdraw")}
               className="flex-1"
             >
               <Minus className="w-4 h-4 mr-1" />
@@ -173,16 +233,95 @@ export default function GoalDetailPage() {
           </div>
         </div>
 
-        {/* History section — populated by KAN-68/72 */}
+        {/* History */}
         <div className="bg-card border rounded-lg p-4">
           <h2 className="font-semibold mb-3">History</h2>
-          <EmptyState
-            icon={Receipt}
-            title="No contributions yet"
-            description="Once you add money to this goal, your contributions and withdrawals will appear here."
+          <ContributionHistory
+            contributions={contributions}
+            isLoading={contribsLoading}
+            onEdit={openEdit}
+            onDelete={handleDelete}
           />
         </div>
       </div>
+
+      <Sheet
+        open={sheet.kind !== "closed"}
+        onOpenChange={(open) => {
+          if (!open) closeSheet();
+        }}
+      >
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>
+              {sheet.kind === "edit" ? "Edit entry" : "New contribution"}
+            </SheetTitle>
+            <SheetDescription>
+              {sheet.kind === "edit"
+                ? "Update the amount, note, or date — the goal total will recalculate."
+                : sheet.kind === "add" && sheet.defaultDirection === "withdraw"
+                  ? "Pulling money out is fine — we'll keep the history straight."
+                  : "Log what you've saved towards this goal."}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6">
+            {sheet.kind !== "closed" && (
+              <ContributionForm
+                initialData={
+                  sheet.kind === "edit"
+                    ? sheet.contribution
+                    : sheet.defaultDirection === "withdraw"
+                      ? // Seed an empty edit-shaped object with a negative
+                        // sign so the form opens on the Withdraw side. The
+                        // form re-derives sign from isDeposit on submit.
+                        ({
+                          id: "",
+                          goal_id: "",
+                          household_id: "",
+                          amount: -1,
+                          note: null,
+                          contributed_at: "",
+                          created_at: "",
+                          updated_at: "",
+                        } as GoalContribution)
+                      : null
+                }
+                onSubmit={async (data) => {
+                  const result =
+                    sheet.kind === "edit"
+                      ? await updateContribution(sheet.contribution.id, data)
+                      : await addContribution(data);
+                  if (result.error) return { error: result.error };
+                  await refetchGoal();
+                  showToast(
+                    sheet.kind === "edit"
+                      ? "Entry updated"
+                      : data.amount > 0
+                        ? `${formatCurrency(data.amount)} added`
+                        : `${formatCurrency(Math.abs(data.amount))} withdrawn`,
+                    "success",
+                  );
+                  return { error: null };
+                }}
+                onDelete={
+                  sheet.kind === "edit"
+                    ? async () => {
+                        const { error: err } = await deleteContribution(
+                          sheet.contribution.id,
+                        );
+                        if (err) return { error: err };
+                        await refetchGoal();
+                        showToast("Entry deleted", "success");
+                        return { error: null };
+                      }
+                    : undefined
+                }
+                onClose={closeSheet}
+              />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
