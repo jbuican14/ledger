@@ -88,7 +88,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Category breakdown + Recent activity + Goals */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6 place-items-center">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
           <CategoryBreakdown transactions={transactions} />
           <RecentTransactions transactions={transactions} />
           <GoalsWidget />
