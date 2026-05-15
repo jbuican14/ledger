@@ -115,6 +115,19 @@ export interface Budget {
 
 export type GoalStatus = "active" | "completed" | "archived";
 
+// amount is signed: positive = deposit, negative = withdrawal.
+// goals.current_amount = SUM(goal_contributions.amount) for that goal.
+export interface GoalContribution {
+  id: string;
+  goal_id: string;
+  household_id: string;
+  amount: number;
+  note: string | null;
+  contributed_at: string; // ISO date (YYYY-MM-DD)
+  created_at: string;
+  updated_at: string;
+}
+
 // current_amount is denormalized — the app maintains it as the SUM of
 // goal_contributions.amount for the goal. Negative values are allowed
 // (withdrawals exceeding deposits surface as an "over-withdrawn" state).
