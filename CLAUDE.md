@@ -122,10 +122,10 @@ Script: `./scripts/create-jira-ticket.sh "Title" "Description" "Task|Epic|Subtas
 
 **Phase 2: Engagement** — in progress
 - ✅ Epic 9: Recurring Transactions (KAN-41–47)
+- ✅ Epic 11: Savings Goals (KAN-64–72, epic KAN-73)
 - ✅ Epic 12: Budget (Simple) (KAN-59, KAN-61)
-- 🟡 Epic 13: Dashboard Enhanced — partial (KAN-61 budget widget, KAN-62 category breakdown, KAN-63 recent transactions)
+- ✅ Epic 13: Dashboard Enhanced (KAN-61, KAN-62, KAN-63, KAN-66)
 - ⏳ Epic 10: Household Invites
-- ⏳ Epic 11: Savings Goals
 - ⏳ Epic 14: Feedback & Insights
 
 ## UX Principles

@@ -1,7 +1,7 @@
 # Family Budget App - Product Specification
 
-> **Document Version:** 2.2
-> **Last Updated:** 2026-05-13
+> **Document Version:** 2.3
+> **Last Updated:** 2026-05-15
 > **Status:** Living document — Phase 1 complete, Phase 2 in progress
 
 ---
@@ -547,15 +547,15 @@ CREATE TABLE budgets (
 > **Goal:** Build habits with recurring awareness, sharing, and goal tracking.
 > **Prerequisite:** Phase 1 complete, users actively logging.
 
-### Phase 2 Progress (as of 2026-05-13)
+### Phase 2 Progress (as of 2026-05-15)
 
 | Epic | Status | Tickets |
 |------|--------|---------|
 | 9: Recurring Transactions | ✅ Merged | KAN-41–47 |
 | 10: Household Invites | ⏳ Pending | — |
-| 11: Savings Goals | ⏳ Pending | — |
+| 11: Savings Goals | ✅ Merged | KAN-64 (schema), KAN-65 (create + /goals), KAN-67 (detail), KAN-68 (add/withdraw), KAN-69 (edit), KAN-70 (archive), KAN-71 (empty state), KAN-72 (edit/delete contribution). Epic ticket: KAN-73 |
 | 12: Budget (Simple) | ✅ Merged | KAN-59 (settings), KAN-61 (dashboard widget) |
-| 13: Dashboard (Enhanced) | 🟡 Partial | KAN-61 (budget), KAN-62 (category breakdown), KAN-63 (recent activity). Goals widget (13.4) blocked on Epic 11. |
+| 13: Dashboard (Enhanced) | ✅ Merged | KAN-61 (budget), KAN-62 (category breakdown), KAN-63 (recent activity), KAN-66 (goals widget) |
 | 14: Feedback & Insights | ⏳ Pending | — |
 
 ---
@@ -785,6 +785,7 @@ These are **not planned** but documented for future consideration:
 | 2.0 | 2026-04-07 | Revised after PO review: leaner MVP, progressive phases, added empty states + polish + feedback |
 | 2.1 | 2026-05-09 | Audit pass. Renumbered epics for coherence (Phase 1: 1–8, Phase 2: 9–14, Phase 3: 15–18). Switched to **signed-amount** transaction model — dropped `is_income` from transactions, added `category.type`. Tightened FK `ON DELETE` semantics across all tables. Added `updated_at` to every tenant table. Pinned the standard RLS policy shape in §5.3. Promoted Household Invites from deferred to Phase 2 Epic 10 (with full schema + acceptance flow) to resolve the partner-persona contradiction. Merged Epic 5.7/5.10 into a single "Soft delete with undo" story. Added Phase 1 progress tracker, positioning line in §1.4, and glossary entries (Quick add, Recurring banner, Soft delete, Profile). Fixed emoji variation selectors on 🍽️ and 🛍️. |
 | 2.2 | 2026-05-13 | Phase 1 marked complete (all 8 epics merged). Added Phase 2 progress tracker: Epic 9 (Recurring, KAN-41–47) and Epic 12 (Budget, KAN-59/61) complete; Epic 13 (Dashboard Enhanced) partial via KAN-61, KAN-62, KAN-63; Epics 10/11/14 pending. |
+| 2.3 | 2026-05-15 | Epic 11 (Savings Goals) shipped — schema, /goals route, detail page, contributions (deposits + withdrawals), edit, archive/restore, dashboard widget. Stories KAN-64 through KAN-72; epic ticket KAN-73. Epic 13 (Dashboard Enhanced) now complete with KAN-66. Phase 2 remaining: Epic 10 (Invites), Epic 14 (Feedback). |
 
 ---
 
