@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,8 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,11 +25,11 @@ export default function ForgotPasswordPage() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
       });
 
-      if (error) {
-        setError(error.message);
+      if (error?.status === 429) {
+        setError("Too many requests. Please wait a few minutes before trying again.");
         return;
       }
 
@@ -38,6 +40,15 @@ export default function ForgotPasswordPage() {
       setLoading(false);
     }
   };
+
+  useEffect(()=>{
+    if(cooldown <= 0) return;
+    const timer = setTimeout(() => {
+      setCooldown((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [cooldown]);
 
   if (success) {
     return (
@@ -57,7 +68,7 @@ export default function ForgotPasswordPage() {
             onClick={() => setSuccess(false)}
             className="text-primary hover:underline"
           >
-            try again
+            try again in ${cooldown}s
           </button>
         </div>
 

@@ -1,32 +1,39 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { createClient } from "@/lib/supabase/client";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
+import { useToast } from '@/components/ui/toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const supabase = createClient();
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [linkState, setLinkState] = useState<'checking' | 'valid' | 'invalid'>(
+    'checking',
+  );
+  const { showToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError('Passwords do not match');
       return;
     }
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters");
+      setError('Password must be at least 8 characters');
       return;
     }
 
@@ -43,13 +50,64 @@ export default function ResetPasswordPage() {
       }
 
       // Password updated successfully
-      router.push("/login?message=password_updated");
+      showToast('Your password has been updated successfully.', 'success');
+      router.push('/dashboard');
+      router.refresh();
     } catch (err) {
-      setError("An unexpected error occurred");
+      setError('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    async function checkLinkValidity() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setLinkState(user ? 'valid' : 'invalid');
+    }
+
+    checkLinkValidity();
+  }, []);
+  if (linkState === 'checking') {
+    return (
+      <div className="space-y-6" aria-hidden="true">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-1/2" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </div>
+    )
+  }
+
+  if (linkState === 'invalid') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight">
+            Invalid reset link
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Password reset links are valid for one hour and can only be used
+            once.
+          </p>
+        </div>
+        <Button asChild className="w-full">
+          <Link href="/forgot-password">Request a new link</Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -96,7 +154,7 @@ export default function ResetPasswordPage() {
         )}
 
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Updating..." : "Update password"}
+          {loading ? 'Updating...' : 'Update password'}
         </Button>
       </form>
     </div>
