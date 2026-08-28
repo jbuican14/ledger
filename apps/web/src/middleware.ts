@@ -84,8 +84,11 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Auth pages a signed-in user is still allowed to reach.
+  const authExemptRoutes = ["/auth/callback", "/reset-password"];
+
   // Redirect to dashboard if accessing auth pages while logged in
-  if (isPublicRoute && user && pathname !== "/auth/callback") {
+  if (isPublicRoute && user && !authExemptRoutes.includes(pathname)) {
     // Check onboarding status
     const { data: profile } = await supabase
       .from("profiles")

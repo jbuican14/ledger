@@ -4,13 +4,26 @@ import type { EmailOtpType } from "@ledger/database/types";
 
 type SupabaseClient = ReturnType<typeof createClient>;
 
-async function redirectAfterAuth(supabase: SupabaseClient, origin: string) {
+function safeNext(next: string | null): string | null {
+  if (!next) return null;
+
+  // Same origin path rejexts "https://evil.com" and 
+  // protocol-relative "//evil.com", both of which browsers treat as external
+  if (!next.startsWith("/") || next.startsWith("//")) return null;
+  return next;
+}
+
+async function redirectAfterAuth(supabase: SupabaseClient, origin: string, next: string | null) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.redirect(`${origin}/login?error=auth_callback_error`);
+  }
+
+  if (next) {
+    return NextResponse.redirect(`${origin}${next}`)
   }
 
   const { data: profile } = await supabase
@@ -31,7 +44,9 @@ function authError(origin: string, message?: string) {
 }
 
 export async function GET(request: Request) {
+  
   const { searchParams, origin } = new URL(request.url);
+  const next = safeNext(searchParams.get("next"));
   const code = searchParams.get("code");
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type");
@@ -55,7 +70,7 @@ export async function GET(request: Request) {
       console.error("verifyOtp failed:", error);
       return authError(origin, error.message);
     }
-    return redirectAfterAuth(supabase, origin);
+    return redirectAfterAuth(supabase, origin, next);
   }
 
   if (code) {
@@ -65,10 +80,10 @@ export async function GET(request: Request) {
       console.error("exchangeCodeForSession failed:", error);
       return authError(origin, error.message);
     }
-    return redirectAfterAuth(supabase, origin);
+    return redirectAfterAuth(supabase, origin, next);
   }
 
   // Implicit flow: Supabase's verify endpoint already set the cookie before
   // redirecting here, so the session is in the request. Just resolve from it.
-  return redirectAfterAuth(createClient(), origin);
+  return redirectAfterAuth(createClient(), origin, next);
 }
