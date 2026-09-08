@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
+import { signInWithGoogle } from "@/lib/auth/signInWithGoogle";
 
 const supabase = createClient();
 
@@ -60,12 +61,17 @@ export function SignupForm() {
   };
 
   const handleGoogleSignup = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    setError(null);
+        const { error } = await signInWithGoogle();
+        if (error) {
+          setError('Could not sign in with Google. Please try again.');
+        }
+    // await supabase.auth.signInWithOAuth({
+    //   provider: "google",
+    //   options: {
+    //     redirectTo: `${window.location.origin}/auth/callback`,
+    //   },
+    // });
   };
 
   if (success) {
