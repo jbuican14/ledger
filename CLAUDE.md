@@ -107,7 +107,21 @@ Notes:
 ## JIRA Integration
 
 Stories are tracked in JIRA (project key: KAN).
-Script: `./scripts/create-jira-ticket.sh "Title" "Description" "Task|Epic|Subtask"`
+Script: `./scripts/create-jira-ticket.sh "Title" "Description" "Epic|Story|Task|Bug|Subtask|Feature" [PARENT-KEY]`
+
+Credentials live in `.env.jira` at the repo root (gitignored). `JIRA_URL` must be
+the **bare host** — the script prepends `https://` itself.
+
+### ⚠️ Board reset — 2026-09-13
+
+The Atlassian site was deactivated and reactivated, which **lost every issue**
+(old KAN-16 … KAN-75). Numbering restarted from KAN-1, so old KAN references in
+git history, branch names and PR titles **no longer resolve** — and new tickets
+will eventually reuse those numbers with different meanings.
+
+**This file and the git log are the system of record for anything before that
+date.** Delivered scope was reconstructed from them into KAN-2 (epic, closed).
+If JIRA is ever lost again, rebuild it from here.
 
 ## Development Workflow
 
@@ -118,15 +132,35 @@ Script: `./scripts/create-jira-ticket.sh "Title" "Description" "Task|Epic|Subtas
 
 ## Current Phase
 
+Ticket numbers below are **post-reset** (see JIRA Integration above).
+
 **Phase 1: Core MVP** — ✅ Complete (Epics 1–8)
 
 **Phase 2: Engagement** — in progress
-- ✅ Epic 9: Recurring Transactions (KAN-41–47)
-- ✅ Epic 11: Savings Goals (KAN-64–72, epic KAN-73)
-- ✅ Epic 12: Budget (Simple) (KAN-59, KAN-61)
-- ✅ Epic 13: Dashboard Enhanced (KAN-61, KAN-62, KAN-63, KAN-66)
-- ⏳ Epic 10: Household Invites
-- ⏳ Epic 14: Feedback & Insights
+- ✅ Epic 9: Recurring Transactions
+- ✅ Epic 11: Savings Goals
+- ✅ Epic 12: Budget (Simple)
+- ✅ Epic 13: Dashboard Enhanced
+- 🔨 Epic 10: Household Sharing (KAN-17) — in progress
+  - ✅ 10.1 Schema (KAN-18)
+  - ⏳ 10.2 Consume invite at signup (KAN-19) ← next
+  - ⏳ 10.3 Create and revoke invites (KAN-20)
+  - ⏳ 10.5 Invite landing page (KAN-21)
+  - ⏳ 10.4 Members list and removal (KAN-22)
+  - Design: `docs/HOUSEHOLD_SHARING_DESIGN.md`
+- ⏳ Epic 14: Feedback & Insights — not refined
+
+All Phase 1 and completed Phase 2 work is recorded under **KAN-2** (closed epic).
+
+### Open defects
+- **KAN-1** — any signed-in user can reach `/reset-password` without
+  re-authenticating. Accepted for MVP; see `docs/PASSWORD_RESET_SECURITY.md`.
+
+### Auth notes
+Email + Google OAuth are both live. Identity linking merges a Google sign-in
+into an existing password account when the email matches and is verified —
+which depends on `mailer_autoconfirm` staying **false**. See
+`docs/AUTH_PATTERNS.md`.
 
 ## UX Principles
 
