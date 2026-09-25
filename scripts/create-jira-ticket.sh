@@ -18,15 +18,20 @@ if [ -z "$TITLE" ]; then
 fi
 
 # Map issue type names to IDs
+# IDs verified against this site 2026-09-13 via
+#   /rest/api/3/issue/createmeta/KAN/issuetypes
 case "$ISSUE_TYPE" in
-    "Epic") TYPE_ID="10002" ;;
-    "Task") TYPE_ID="10001" ;;
-    "Subtask") TYPE_ID="10003" ;;
-    *) TYPE_ID="10001" ;;
+    "Epic")    TYPE_ID="10001" ;;
+    "Subtask") TYPE_ID="10002" ;;
+    "Task")    TYPE_ID="10003" ;;
+    "Story")   TYPE_ID="10004" ;;
+    "Feature") TYPE_ID="10005" ;;
+    "Bug")     TYPE_ID="10006" ;;
+    *)         TYPE_ID="10003" ;;
 esac
 
 # Build JSON payload using Python for proper escaping
-if [ "$ISSUE_TYPE" = "Subtask" ] && [ -n "$PARENT_KEY" ]; then
+if [ -n "$PARENT_KEY" ]; then
     PAYLOAD=$(python3 -c "
 import json
 payload = {
