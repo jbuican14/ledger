@@ -1,7 +1,7 @@
 # Epic 10 — Household Sharing: design & refinement
 
 > **Refined:** 2026-09-10
-> **Status:** 10.1 shipped; 10.2–10.5 not started
+> **Status:** 10.1 shipped; 10.2 built and tested; 10.3–10.5 not started
 > **Related:** `docs/AUTH_PATTERNS.md`, `supabase/migrations/20260908000001_add_household_invites.sql`
 
 The reasoning behind how sharing works, so a future change starts from the
@@ -144,7 +144,37 @@ Also closed two pre-existing holes found during the work:
 - Profile `SELECT` was limited to your own row, which makes a members list
   impossible. Widened to the household.
 
-### 10.2 — Consume the invite at signup
+### 10.2 — Consume the invite at signup 🔨 built
+
+Migration `20260926000001_consume_invite_at_signup.sql`; tests in
+`supabase/tests/consume_invite_at_signup.sql` (all cases pass).
+
+Also fixed a 10.1 regression: `profiles.role` defaulted to `member` but the
+trigger never set it, so every signup after 10.1 was a `member` of an ownerless
+household. The trigger now sets `owner` explicitly and the migration promotes
+the affected profiles.
+
+**Decided (2026-09-26) — unverified email: PENDING → EXPIRED lifecycle.**
+For email/password signups the `auth.users` row exists before the email is
+confirmed, so the trigger claims the invite before inbox ownership is proven.
+v1 accepts this with a derived membership state — no second trigger:
+
+| State | Condition |
+|---|---|
+| `ACTIVE` | `auth.users.email_confirmed_at` is set |
+| `PENDING` | not confirmed, claimed within the verification window |
+| `EXPIRED` | not confirmed, window elapsed |
+
+- Only an `ACTIVE` member blocks a new invite to the same email (10.3).
+- The partial unique index already allows re-inviting once `accepted_at` is set.
+- 10.4 shows `PENDING`/`EXPIRED` members distinctly.
+- **To resolve in 10.3:** an EXPIRED claim still holds the `auth.users` row
+  (email is unique), so a re-issued invite never fires the INSERT trigger
+  again. Re-issuing must also remove the stale unconfirmed user (e.g. a
+  SECURITY DEFINER function run at invite creation) or the new invite can't be
+  consumed — and the old user could still confirm late and become ACTIVE.
+  Verification window length also TBD.
+
 
 **Why:** without this the invite does nothing — a new user always lands in a
 fresh household of their own.
