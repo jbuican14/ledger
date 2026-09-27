@@ -1,8 +1,13 @@
 # Epic 10 — Household Sharing: design & refinement
 
 > **Refined:** 2026-09-10
-> **Status:** 10.1 shipped; 10.2 built and tested; 10.3–10.5 not started
-> **Related:** `docs/AUTH_PATTERNS.md`, `supabase/migrations/20260908000001_add_household_invites.sql`
+> **Status:** 10.1 shipped; 10.2 and 10.3 built and tested; 10.4–10.5 not started
+> **Related:** `supabase/migrations/20260908000001_add_household_invites.sql`,
+> `docs/AUTH_PATTERNS.md` (only on the unmerged `feat/google-oauth-shared-handler`
+> branch, commit `6caed9b` — not yet on `main`)
+> **Confluence:** [Technical Design Notes (Epic 10)](https://jbuican19.atlassian.net/wiki/spaces/~6043c58bd4c6210071ca7eb6/pages/1146882/Ledger+Household+Sharing+Auth+Technical+Design+Notes+Epic+10)
+> — a 2026-09-13 summary of this file for reviewers, kept in a personal space.
+> This file wins if the two disagree.
 
 The reasoning behind how sharing works, so a future change starts from the
 decisions rather than re-litigating them.
@@ -165,15 +170,16 @@ v1 accepts this with a derived membership state — no second trigger:
 | `PENDING` | not confirmed, claimed within the verification window |
 | `EXPIRED` | not confirmed, window elapsed |
 
-- Only an `ACTIVE` member blocks a new invite to the same email (10.3).
+- `ACTIVE` and `PENDING` both block a new invite to the same email (10.3).
+  PENDING blocks because re-inviting would delete someone halfway through
+  confirming.
 - The partial unique index already allows re-inviting once `accepted_at` is set.
 - 10.4 shows `PENDING`/`EXPIRED` members distinctly.
-- **To resolve in 10.3:** an EXPIRED claim still holds the `auth.users` row
-  (email is unique), so a re-issued invite never fires the INSERT trigger
-  again. Re-issuing must also remove the stale unconfirmed user (e.g. a
-  SECURITY DEFINER function run at invite creation) or the new invite can't be
-  consumed — and the old user could still confirm late and become ACTIVE.
-  Verification window length also TBD.
+- **Resolved in 10.3:** an EXPIRED claim still holds the `auth.users` row
+  (email is unique), so a re-issued invite would never fire the INSERT trigger
+  again. `create_household_invite()` deletes the stale unconfirmed user when
+  re-inviting, which also stops a late confirmation turning it ACTIVE.
+  Verification window: **7 days**, measured from `profiles.created_at`.
 
 
 **Why:** without this the invite does nothing — a new user always lands in a
@@ -197,7 +203,28 @@ behave exactly as today.
 - No invite → unchanged behaviour
 - Works for both email/password and Google
 
-### 10.3 — Create and revoke invites
+### 10.3 — Create and revoke invites 🔨 built
+
+Migration `20260926000002_create_household_invite.sql`; tests in
+`supabase/tests/create_household_invite.sql`. UI: `useHouseholdInvites` hook
+and `components/household/household-invites.tsx` in Settings → Household.
+
+How it's built:
+
+- **Create goes through an RPC, not an INSERT.** `create_household_invite()`
+  (SECURITY DEFINER) has to read `auth.users` to apply the lifecycle above, and
+  the client can't. It checks for an owner, lowercases and validates the email,
+  refuses ACTIVE/PENDING members, clears an EXPIRED claim, and replaces an
+  unclaimed invite that has expired, so the owner can simply invite again.
+- **Duplicate pending invite** → the unique index raises `23505`, and the hook
+  shows it as "They already have a pending invite".
+- **Revoke deletes only unclaimed rows** (`accepted_at IS NULL`). If they
+  joined after the list loaded, the row is now their membership record. The hook
+  asks for the deleted rows back (`.select()`), because a delete refused by RLS
+  removes nothing and returns no error. Zero rows → "already used or removed".
+- The pending list shows unclaimed invites only; a claimed one shows up as a
+  member instead (10.4). Expired-but-unclaimed invites stay listed as "Expired"
+  so they can be revoked or re-issued.
 
 **Why:** the owner needs a way to produce the link.
 

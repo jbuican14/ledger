@@ -8,12 +8,32 @@ export interface Household {
   updated_at: string;
 }
 
+// owner: full data access + admin (invite, remove, rename).
+// member: full data access, no admin. See docs/HOUSEHOLD_SHARING_DESIGN.md.
+export type HouseholdRole = "owner" | "member";
+
 export interface Profile {
   id: string;
   household_id: string;
+  role: HouseholdRole;
   display_name: string | null;
   avatar_url: string | null;
   onboarding_completed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// The share link carries `token`; joining is authorised by matching `email`
+// at signup. accepted_at NULL = not yet claimed.
+export interface HouseholdInvite {
+  id: string;
+  household_id: string;
+  email: string;
+  role: HouseholdRole;
+  token: string;
+  invited_by: string | null;
+  expires_at: string;
+  accepted_at: string | null;
   created_at: string;
   updated_at: string;
 }

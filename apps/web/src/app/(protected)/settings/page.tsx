@@ -8,6 +8,7 @@ import { CategoryManagement } from "@/components/categories/category-management"
 import { PaymentMethodManagement } from "@/components/payment-methods/payment-method-management";
 import { RecurringTransactionManagement } from "@/components/recurring-transactions/recurring-transaction-management";
 import { BudgetManagement } from "@/components/budget/budget-management";
+import { HouseholdInvites } from "@/components/household/household-invites";
 
 export default function SettingsPage() {
   const { user, profile, household, signOut } = useAuth();
@@ -58,6 +59,7 @@ export default function SettingsPage() {
             ) : (
               <p className="text-muted-foreground text-sm">No household configured</p>
             )}
+            {household && <HouseholdInvites />}
           </div>
 
           {/* Budget */}
