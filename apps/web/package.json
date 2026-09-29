@@ -32,6 +32,7 @@
   },
   "devDependencies": {
     "@ledger/config": "workspace:*",
+    "@playwright/test": "^1.63.0",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
     "@types/react": "^18",
