@@ -103,6 +103,7 @@ Notes:
 - `PRODUCT_SPEC.md` - Full product specification
 - `apps/web/src/app/` - Next.js App Router pages
 - `packages/database/src/database.types.ts` - Supabase generated types
+- `docs/DATABASE.md` - ER diagram, signup trigger flow, security layers (update when a migration changes the schema)
 
 ## JIRA Integration
 
@@ -143,12 +144,16 @@ Ticket numbers below are **post-reset** (see JIRA Integration above).
 - ✅ Epic 13: Dashboard Enhanced
 - 🔨 Epic 10: Household Sharing (KAN-17) — in progress
   - ✅ 10.1 Schema (KAN-18)
-  - ⏳ 10.2 Consume invite at signup (KAN-19) ← next
-  - ⏳ 10.3 Create and revoke invites (KAN-20)
+  - 🔨 10.2 Consume invite at signup (KAN-19) — built, SQL tests pass; migration
+    not yet applied to remote
+  - ⏳ 10.3 Create and revoke invites (KAN-20) ← next
   - ⏳ 10.5 Invite landing page (KAN-21)
   - ⏳ 10.4 Members list and removal (KAN-22)
   - Design: `docs/HOUSEHOLD_SHARING_DESIGN.md`
 - ⏳ Epic 14: Feedback & Insights — not refined
+
+**Maintenance-FY27Q1** (KAN-23) — backlog
+- ⏳ Clean up orphaned households with no members (KAN-24)
 
 All Phase 1 and completed Phase 2 work is recorded under **KAN-2** (closed epic).
 
