@@ -27,6 +27,7 @@ out/
 # Testing
 coverage/
 .nyc_output/
+apps/web/test-results/
 
 # Debug
 npm-debug.log*
