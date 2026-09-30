@@ -103,6 +103,7 @@ Notes:
 - `PRODUCT_SPEC.md` - Full product specification
 - `apps/web/src/app/` - Next.js App Router pages
 - `packages/database/src/database.types.ts` - Supabase generated types
+- `docs/DATABASE_BASICS.md` - Beginner's guide to the DB concepts used here (keys, RLS, triggers, NULL, migrations)
 - `docs/DATABASE.md` - ER diagram, signup trigger flow, security layers (update when a migration changes the schema)
 
 ## JIRA Integration
@@ -145,11 +146,13 @@ Ticket numbers below are **post-reset** (see JIRA Integration above).
 - 🔨 Epic 10: Household Sharing (KAN-17) — in progress
   - ✅ 10.1 Schema (KAN-18)
   - 🔨 10.2 Consume invite at signup (KAN-19) — built, SQL tests pass; migration
-    not yet applied to remote
-  - ⏳ 10.3 Create and revoke invites (KAN-20) ← next
+    applied to remote 2026-09-27
+  - 🔨 10.3 Create and revoke invites (KAN-20) — built, SQL + unit tests pass;
+    migration applied to remote 2026-09-27
   - ⏳ 10.5 Invite landing page (KAN-21)
   - ⏳ 10.4 Members list and removal (KAN-22)
-  - Design: `docs/HOUSEHOLD_SHARING_DESIGN.md`
+  - Design: `docs/HOUSEHOLD_SHARING_DESIGN.md` (reviewer summary on Confluence,
+    linked from its header — the repo file wins if they disagree)
 - ⏳ Epic 14: Feedback & Insights — not refined
 
 **Maintenance-FY27Q1** (KAN-23) — backlog
@@ -165,7 +168,8 @@ All Phase 1 and completed Phase 2 work is recorded under **KAN-2** (closed epic)
 Email + Google OAuth are both live. Identity linking merges a Google sign-in
 into an existing password account when the email matches and is verified —
 which depends on `mailer_autoconfirm` staying **false**. See
-`docs/AUTH_PATTERNS.md`.
+`docs/AUTH_PATTERNS.md` — which is only on the unmerged
+`feat/google-oauth-shared-handler` branch (commit `6caed9b`) until that merges.
 
 ## UX Principles
 

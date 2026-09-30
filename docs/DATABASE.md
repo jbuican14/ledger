@@ -1,6 +1,7 @@
 # Database
 
-> **Last updated:** 2026-09-26 (through migration `20260926000001_consume_invite_at_signup.sql`)
+> **Last updated:** 2026-09-26 (through migration `20260926000002_create_household_invite.sql`)
+> **New to databases?** Start with [DATABASE_BASICS.md](./DATABASE_BASICS.md).
 > **Source of truth:** `supabase/migrations/`. If this diagram and a migration disagree, the migration wins — update this file.
 
 ## Entity-relationship diagram
@@ -156,6 +157,7 @@ transaction).
 | `GRANT … TO authenticated` | Table visible to supabase-js at all (required for new tables — see CLAUDE.md) |
 | RLS policies | Row access: `household_id = get_user_household_id()` |
 | `is_household_owner()` | Gates admin actions (invites) |
+| `create_household_invite()` | The only way the UI creates invites. Owner-only; applies the ACTIVE/PENDING/EXPIRED claim rules (tests: `supabase/tests/create_household_invite.sql`) |
 | Column-level `GRANT UPDATE` on `profiles` | Clients may only update `display_name`, `avatar_url`, `onboarding_completed`. `household_id` and `role` are writable only by `SECURITY DEFINER` functions |
 
 Policies call `get_user_household_id()` rather than inlining the lookup, so a
