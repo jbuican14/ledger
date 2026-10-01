@@ -148,9 +148,8 @@ If JIRA is ever lost again, rebuild it from here.
 
 ### Pick up here
 
-- 2026-10-01: e2e + unit tests green on main. README troubleshooting committed on
-  `docs/e2e-troubleshooting-readme` (not pushed, no PR yet).
-- Next: <your pick>
+- Confluence: Epic 10 design summary, linked from the header of
+  `docs/HOUSEHOLD_SHARING_DESIGN.md`.
 - Confluence: Epic 10 design summary, linked from the header of
   `docs/HOUSEHOLD_SHARING_DESIGN.md`.
 
