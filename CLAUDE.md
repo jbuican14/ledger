@@ -153,6 +153,7 @@ If JIRA is ever lost again, rebuild it from here.
 - Next: finish KAN-20 — write a Playwright e2e test for create + revoke invite, then mark 10.3 ✅.
 - Confluence: Epic 10 design summary, linked from the header of
   `docs/HOUSEHOLD_SHARING_DESIGN.md`.
+  - Parked: unmerged branches to resolve — see Confluence "Ledger — Unmerged branches to resolve (2026-10-01)".
 
 ## Current Phase
 
