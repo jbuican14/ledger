@@ -34,6 +34,7 @@ A family budget application for UK households to track expenses, manage budgets,
 - Node.js 18+
 - pnpm 9+
 - Supabase CLI (for local development)
+- Docker Desktop (local Supabase runs in Docker containers)
 
 ### Installation
 
@@ -66,6 +67,21 @@ pnpm typecheck    # Type-check all apps
 pnpm clean        # Clean all build artifacts
 ```
 
+### E2E tests (Playwright)
+
+Requires local Supabase running (`supabase status` should list URLs). Playwright starts its own dev server on `localhost:3000`.
+
+```bash
+cd apps/web
+pnpm exec playwright test           # run all e2e tests
+pnpm exec playwright test signup    # run one spec
+pnpm exec playwright show-trace test-results/<test-folder>/trace.zip   # inspect a failure
+```
+
+- Local Supabase ports are `553xx` (API `55321`, Inbucket `55324`), not the default `543xx`.
+- Email confirmation is ON locally to match production — confirmation emails land in Inbucket at http://127.0.0.1:55324.
+- `baseURL` must stay `localhost` — see the comment in `apps/web/playwright.config.ts`.
+
 ## Troubleshooting
 
 ### Next.js cache issues
@@ -83,6 +99,31 @@ pnpm dev
 - **"**webpack_modules**[moduleId] is not a function"** - Clear `.next` cache (see above)
 - **"Loading..." stuck forever** - Check browser console for RLS/Supabase errors
 - **Auth errors after schema changes** - Run `supabase db reset` to apply migrations
+
+### Docker / local Supabase won't start
+
+Symptoms: e2e signup test fails at "Check your email" while the smoke test passes; the `/auth/v1/signup` request shows as **cancelled** in the trace; `supabase status` says "Restart Docker Desktop"; Docker Desktop is stuck on "retry".
+
+Nothing is answering on port `55321`, because Docker isn't running the Supabase containers. Check in this order:
+
+1. **Disk space.** Docker can't start with a nearly full disk. Keep 20 GB+ free (`df -h /System/Volumes/Data`).
+2. **A frozen engine from an earlier session.** Quitting the app can leave the engine process behind, and new launches get stuck behind it:
+   ```bash
+   pgrep -fl com.docker.backend   # note the PID
+   kill -9 <PID>                  # force-stop it (data in Docker.raw is not affected)
+   open -a Docker                 # wait for "Engine running"
+   supabase start
+   ```
+3. Only if both are fine and it still fails, update or reinstall Docker Desktop. A reinstall deletes your local Supabase data.
+
+### Playwright: "Executable doesn't exist"
+
+Every e2e test (including the smoke test) fails instantly with `browserType.launch: Executable doesn't exist at ~/Library/Caches/ms-playwright/...`. The browser Playwright drives is missing — it lives in a cache outside the repo, so `pnpm install` doesn't restore it, and clearing `~/Library/Caches` to free disk space deletes it.
+
+```bash
+cd apps/web
+pnpm exec playwright install chromium
+```
 
 ### when update new node do
 
