@@ -5,6 +5,7 @@ This file provides context for Claude Code AI assistant when working on this pro
 ## Project Overview
 
 **Ledger** is a family budget application for UK households. The core value proposition is:
+
 > "Know what's coming, control what goes out, track what happened"
 
 Key differentiator: **Recurring-aware monthly tracking with user control**
@@ -32,29 +33,34 @@ supabase/           → Migrations & edge functions
 ## Coding Conventions
 
 ### TypeScript
+
 - Strict mode enabled
 - Prefer `type` over `interface` unless extending
 - Use explicit return types on exported functions
 - Avoid `any` - use `unknown` with type guards
 
 ### React/Next.js
+
 - Use App Router patterns (not Pages Router)
 - Server Components by default, 'use client' only when needed
 - Prefer Server Actions for mutations
 - Use React Query for client-side data fetching
 
 ### Styling
+
 - Use Tailwind utility classes
 - Use `cn()` utility for conditional classes (from @ledger/ui)
 - Follow shadcn/ui patterns for component styling
 - CSS variables for theme colors (defined in globals.css)
 
 ### File Naming
+
 - Components: PascalCase (e.g., `TransactionList.tsx`)
 - Utilities: camelCase (e.g., `formatCurrency.ts`)
 - Types: PascalCase with `.types.ts` suffix when needed
 
 ### Imports
+
 - Use path aliases: `@/*` for app, `@ledger/ui` for shared components
 - Group imports: React → External → Internal → Styles
 
@@ -94,6 +100,7 @@ CREATE POLICY "Users view own household rows" ON public.your_table
 ```
 
 Notes:
+
 - This app uses `authenticated` only — never grant to `anon` unless the table is intentionally public.
 - Never grant to `service_role` from app migrations; that role bypasses RLS and is reserved for server-only contexts.
 - If a Data API call returns `42501 permission denied for table`, the grant is missing.
@@ -132,6 +139,22 @@ If JIRA is ever lost again, rebuild it from here.
 3. JIRA tickets created for each story
 4. PR naming: `[KAN-X] Short description`
 
+### How we work
+
+- Juti builds; Claude explains, hands over the command or code, then checks the result.
+- One step at a time. No step is done until the pick-up note below is updated.
+- Every story has a JIRA ticket (KAN) before work starts.
+- Design docs live in `docs/`; the reviewer summary lives on Confluence (repo wins if they differ).
+
+### Pick up here
+
+- 2026-10-01: e2e + unit tests green on main. README troubleshooting + working
+  agreement pushed on `docs/e2e-troubleshooting-readme` (PR: no PR yet).
+- Next: finish KAN-20 — write a Playwright e2e test for create + revoke invite, then mark 10.3 ✅.
+- Confluence: Epic 10 design summary, linked from the header of
+  `docs/HOUSEHOLD_SHARING_DESIGN.md`.
+  - Parked: unmerged branches to resolve — see Confluence "Ledger — Unmerged branches to resolve (2026-10-01)".
+
 ## Current Phase
 
 Ticket numbers below are **post-reset** (see JIRA Integration above).
@@ -139,6 +162,7 @@ Ticket numbers below are **post-reset** (see JIRA Integration above).
 **Phase 1: Core MVP** — ✅ Complete (Epics 1–8)
 
 **Phase 2: Engagement** — in progress
+
 - ✅ Epic 9: Recurring Transactions
 - ✅ Epic 11: Savings Goals
 - ✅ Epic 12: Budget (Simple)
@@ -156,15 +180,18 @@ Ticket numbers below are **post-reset** (see JIRA Integration above).
 - ⏳ Epic 14: Feedback & Insights — not refined
 
 **Maintenance-FY27Q1** (KAN-23) — backlog
+
 - ⏳ Clean up orphaned households with no members (KAN-24)
 
 All Phase 1 and completed Phase 2 work is recorded under **KAN-2** (closed epic).
 
 ### Open defects
+
 - **KAN-1** — any signed-in user can reach `/reset-password` without
   re-authenticating. Accepted for MVP; see `docs/PASSWORD_RESET_SECURITY.md`.
 
 ### Auth notes
+
 Email + Google OAuth are both live. Identity linking merges a Google sign-in
 into an existing password account when the email matches and is verified —
 which depends on `mailer_autoconfirm` staying **false**. See
