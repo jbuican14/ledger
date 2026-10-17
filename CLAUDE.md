@@ -148,12 +148,15 @@ If JIRA is ever lost again, rebuild it from here.
 
 ### Pick up here
 
-- 2026-10-01: e2e + unit tests green on main. README troubleshooting + working
-  agreement pushed on `docs/e2e-troubleshooting-readme` (PR: no PR yet).
-- Next: finish KAN-20 — write a Playwright e2e test for create + revoke invite, then mark 10.3 ✅.
+- 2026-10-17: KAN-20 done — invites e2e (create + revoke) passes; README has
+  Docker/Supabase start steps for e2e.
+- Next: KAN-21 (10.5) invite landing page at `/invite/[token]` — links from
+  10.3 currently 404. Then KAN-26.
 - Confluence: Epic 10 design summary, linked from the header of
   `docs/HOUSEHOLD_SHARING_DESIGN.md`.
   - Parked: unmerged branches to resolve — see Confluence "Ledger — Unmerged branches to resolve (2026-10-01)".
+- Parked: KAN-26 — transaction rows: payment method under the amount (option B,
+  11px) + soft category icons. Mockup: https://claude.ai/artifact/9ew8UGNr2kWcrBFWMc2n6G
 
 ## Current Phase
 
@@ -171,7 +174,7 @@ Ticket numbers below are **post-reset** (see JIRA Integration above).
   - ✅ 10.1 Schema (KAN-18)
   - 🔨 10.2 Consume invite at signup (KAN-19) — built, SQL tests pass; migration
     applied to remote 2026-09-27
-  - 🔨 10.3 Create and revoke invites (KAN-20) — built, SQL + unit tests pass;
+  - ✅ 10.3 Create and revoke invites (KAN-20) — built, SQL + unit + e2e tests pass;
     migration applied to remote 2026-09-27
   - ⏳ 10.5 Invite landing page (KAN-21)
   - ⏳ 10.4 Members list and removal (KAN-22)

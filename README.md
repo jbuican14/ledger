@@ -71,6 +71,19 @@ pnpm clean        # Clean all build artifacts
 
 Requires local Supabase running (`supabase status` should list URLs). Playwright starts its own dev server on `localhost:3000`.
 
+Start Docker and Supabase first (each session, after a reboot or after quitting Docker):
+
+```bash
+open -a Docker        # wait until Docker Desktop shows "Engine running"
+docker info > /dev/null && echo "Docker is up"   # errors if the engine isn't ready yet
+supabase start        # from the repo root; first run downloads images and takes a few minutes
+supabase status       # should list API (55321) and Inbucket (55324) URLs
+```
+
+When you're done: `supabase stop` (keeps your local data), then quit Docker Desktop if you want the memory back. If Docker won't start, see [Docker / local Supabase won't start](#docker--local-supabase-wont-start).
+
+Then run the tests:
+
 ```bash
 cd apps/web
 pnpm exec playwright test           # run all e2e tests
