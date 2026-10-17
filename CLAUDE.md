@@ -176,7 +176,7 @@ Ticket numbers below are **post-reset** (see JIRA Integration above).
     applied to remote 2026-09-27
   - ✅ 10.3 Create and revoke invites (KAN-20) — built, SQL + unit + e2e tests pass;
     migration applied to remote 2026-09-27
-  - ⏳ 10.5 Invite landing page (KAN-21)
+  - ⏳ 10.5 Invite landing page (KAN-21) -- mockup + decision: https://claude.ai/artifact/2uZpGZhTiCRsHkigYthiSM
   - ⏳ 10.4 Members list and removal (KAN-22)
   - Design: `docs/HOUSEHOLD_SHARING_DESIGN.md` (reviewer summary on Confluence,
     linked from its header — the repo file wins if they disagree)

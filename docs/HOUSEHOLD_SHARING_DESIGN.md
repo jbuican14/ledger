@@ -17,8 +17,8 @@ decisions rather than re-litigating them.
 ## Product framing
 
 Ledger is a budget app for **households**, not individuals. Until now every user
-has been alone in a household of one, which makes the core promise — *"know
-what's coming, control what goes out"* — only half true. A budget one partner
+has been alone in a household of one, which makes the core promise — _"know
+what's coming, control what goes out"_ — only half true. A budget one partner
 can't see isn't a household budget.
 
 The moment that matters is **invite acceptance**. It is the highest-friction
@@ -35,16 +35,16 @@ a user rather than adding a membership row.
 
 **Rejected:** a `household_members` join table (M:N).
 
-| | Single FK | Membership table |
-|---|---|---|
-| RLS changes needed | none | every policy |
-| Multi-household | impossible | supported |
-| UI cost | none | household switcher on every screen |
+|                    | Single FK  | Membership table                   |
+| ------------------ | ---------- | ---------------------------------- |
+| RLS changes needed | none       | every policy                       |
+| Multi-household    | impossible | supported                          |
+| UI cost            | none       | household switcher on every screen |
 
 Multi-household serves real people — an adult child managing a parent's budget,
 an accountant with clients — but that is a **different product** with a household
 switcher in the nav and a "which household?" field on every form. That directly
-contradicts *speed over completeness* and *progressive disclosure*.
+contradicts _speed over completeness_ and _progressive disclosure_.
 
 ### Why this is safe rather than merely cheap
 
@@ -119,8 +119,8 @@ not deleted, but invisible and unrecoverable through the UI. That is the one
 outcome we must never ship.
 
 Merging two households means reconciling categories, payment methods, budgets and
-goals: an epic of its own. The dominant real flow is *"I use Ledger, my partner
-has never heard of it"*, so v1 serves that and is honest about the rest.
+goals: an epic of its own. The dominant real flow is _"I use Ledger, my partner
+has never heard of it"_, so v1 serves that and is honest about the rest.
 
 **Detection is non-negotiable even in v1.** Silent overwriting is not an option.
 
@@ -164,11 +164,11 @@ For email/password signups the `auth.users` row exists before the email is
 confirmed, so the trigger claims the invite before inbox ownership is proven.
 v1 accepts this with a derived membership state — no second trigger:
 
-| State | Condition |
-|---|---|
-| `ACTIVE` | `auth.users.email_confirmed_at` is set |
+| State     | Condition                                             |
+| --------- | ----------------------------------------------------- |
+| `ACTIVE`  | `auth.users.email_confirmed_at` is set                |
 | `PENDING` | not confirmed, claimed within the verification window |
-| `EXPIRED` | not confirmed, window elapsed |
+| `EXPIRED` | not confirmed, window elapsed                         |
 
 - `ACTIVE` and `PENDING` both block a new invite to the same email (10.3).
   PENDING blocks because re-inviting would delete someone halfway through
@@ -180,7 +180,6 @@ v1 accepts this with a derived membership state — no second trigger:
   again. `create_household_invite()` deletes the stale unconfirmed user when
   re-inviting, which also stops a late confirmation turning it ACTIVE.
   Verification window: **7 days**, measured from `profiles.created_at`.
-
 
 **Why:** without this the invite does nothing — a new user always lands in a
 fresh household of their own.
@@ -195,6 +194,7 @@ behave exactly as today.
 **all** signups, not just invited ones. Every new branch must be exercised.
 
 **AC**
+
 - Invited email signs up → lands in the inviter's household as `member`
 - No duplicate categories or payment methods are created
 - Invitee skips onboarding
@@ -232,6 +232,7 @@ How it's built:
 pending-invites list with revoke. Owner-only, enforced by RLS.
 
 **AC**
+
 - Owner creates an invite and can copy the link
 - Email is lowercased before insert (the `CHECK` constraint enforces it)
 - Duplicate pending invite for the same email is prevented (partial unique index)
@@ -246,6 +247,7 @@ pending-invites list with revoke. Owner-only, enforced by RLS.
 moves them to a fresh household of their own rather than deleting them.
 
 **AC**
+
 - All household members visible with roles
 - Owner can remove a member; member cannot remove anyone
 - The last owner cannot be removed or demoted
@@ -260,11 +262,21 @@ routes to signup. If the email already has an account, explain clearly instead o
 proceeding.
 
 **AC**
+
 - Valid token → landing page naming the household, with a signup CTA
 - Expired, revoked or already-used token → clear message, no signup path
 - Invited email already registered → explicit "this email already has an account"
-- Signing up with a *different* email than invited → normal signup, own
+- Signing up with a _different_ email than invited → normal signup, own
   household, and the invite stays pending
+
+**Email hint (decided 2026-10-17):** the landing page shows the invited email
+masked — the first 2 and last 1 characters before the @ (`al•••x@gmail.com`).
+If there are 3 characters or fewer before the @, show only the first.
+
+**Why:** low maintenance. The inviter knows which address they typed, so the
+invitee can ask them. If wrong-address signups become a real problem, add an
+`invite_email_matches(token, email)` RPC that returns only true/false, checked
+before the signup form submits.
 
 ---
 
