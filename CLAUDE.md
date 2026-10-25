@@ -148,10 +148,10 @@ If JIRA is ever lost again, rebuild it from here.
 
 ### Pick up here
 
-- 2026-10-17: KAN-20 done — invites e2e (create + revoke) passes; README has
-  Docker/Supabase start steps for e2e.
-- Next: KAN-21 (10.5) invite landing page at `/invite/[token]` — links from
-  10.3 currently 404. Then KAN-26.
+- 2026-10-24: KAN-21 (10.5) DB half done — `get_invite_preview()` migration
+  pushed to remote (recorded in migration history); SQL tests 1–8 pass.
+- Next: KAN-21 page at `/invite/[token]` calling `get_invite_preview` — links
+  from 10.3 still 404 until it ships. Then KAN-26.
 - Confluence: Epic 10 design summary, linked from the header of
   `docs/HOUSEHOLD_SHARING_DESIGN.md`.
   - Parked: unmerged branches to resolve — see Confluence "Ledger — Unmerged branches to resolve (2026-10-01)".
@@ -176,7 +176,8 @@ Ticket numbers below are **post-reset** (see JIRA Integration above).
     applied to remote 2026-09-27
   - ✅ 10.3 Create and revoke invites (KAN-20) — built, SQL + unit + e2e tests pass;
     migration applied to remote 2026-09-27
-  - ⏳ 10.5 Invite landing page (KAN-21) -- mockup + decision: https://claude.ai/artifact/2uZpGZhTiCRsHkigYthiSM
+  - 🔨 10.5 Invite landing page (KAN-21) — DB function + SQL tests done, migration
+    pushed 2026-10-24; page not built. Mockup + decision: https://claude.ai/artifact/2uZpGZhTiCRsHkigYthiSM
   - ⏳ 10.4 Members list and removal (KAN-22)
   - Design: `docs/HOUSEHOLD_SHARING_DESIGN.md` (reviewer summary on Confluence,
     linked from its header — the repo file wins if they disagree)
