@@ -11,7 +11,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   graphql_public: {
     Tables: {
@@ -115,6 +115,54 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "categories_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goal_contributions: {
+        Row: {
+          amount: number
+          contributed_at: string
+          created_at: string
+          goal_id: string
+          household_id: string
+          id: string
+          note: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          contributed_at?: string
+          created_at?: string
+          goal_id: string
+          household_id: string
+          id?: string
+          note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          contributed_at?: string
+          created_at?: string
+          goal_id?: string
+          household_id?: string
+          id?: string
+          note?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_contributions_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_contributions_household_id_fkey"
             columns: ["household_id"]
             isOneToOne: false
             referencedRelation: "households"
@@ -457,6 +505,37 @@ export type Database = {
       create_default_payment_methods: {
         Args: { p_household_id: string }
         Returns: undefined
+      }
+      create_household_invite: {
+        Args: { p_email: string }
+        Returns: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          household_id: string
+          id: string
+          invited_by: string | null
+          role: string
+          token: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "household_invites"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      get_invite_preview: {
+        Args: { p_token: string }
+        Returns: {
+          email_hint: string
+          expires_at: string
+          household_name: string
+          inviter_name: string
+          status: string
+        }[]
       }
       get_user_household_id: { Args: never; Returns: string }
       is_household_owner: { Args: never; Returns: boolean }
