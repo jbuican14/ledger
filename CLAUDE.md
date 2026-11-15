@@ -150,8 +150,12 @@ If JIRA is ever lost again, rebuild it from here.
 
 - 2026-10-24: KAN-21 (10.5) DB half done — `get_invite_preview()` migration
   pushed to remote (recorded in migration history); SQL tests 1–8 pass.
-- Next: KAN-21 page at `/invite/[token]` calling `get_invite_preview` — links
-  from 10.3 still 404 until it ships. Then KAN-26.
+- 2026-11-14: KAN-21 page built at
+  `apps/web/src/app/(auth)/invite/[token]/page.tsx` — all five states checked
+  in the browser, plus one real end-to-end invite → signup → confirm →
+  dashboard (skipped onboarding; link then shows "used"). Lint + tsc clean.
+- Next: open the KAN-21 PR. Still to eyeball from that test: categories not
+  duplicated, invite gone from the owner's pending list. Then KAN-26.
 - Confluence: Epic 10 design summary, linked from the header of
   `docs/HOUSEHOLD_SHARING_DESIGN.md`.
   - Parked: unmerged branches to resolve — see Confluence "Ledger — Unmerged branches to resolve (2026-10-01)".
@@ -177,7 +181,7 @@ Ticket numbers below are **post-reset** (see JIRA Integration above).
   - ✅ 10.3 Create and revoke invites (KAN-20) — built, SQL + unit + e2e tests pass;
     migration applied to remote 2026-09-27
   - 🔨 10.5 Invite landing page (KAN-21) — DB function + SQL tests done, migration
-    pushed 2026-10-24; page not built. Mockup + decision: https://claude.ai/artifact/2uZpGZhTiCRsHkigYthiSM
+    pushed 2026-10-24; page built 2026-11-14, PR pending. Mockup + decision: https://claude.ai/artifact/2uZpGZhTiCRsHkigYthiSM
   - ⏳ 10.4 Members list and removal (KAN-22)
   - Design: `docs/HOUSEHOLD_SHARING_DESIGN.md` (reviewer summary on Confluence,
     linked from its header — the repo file wins if they disagree)
